@@ -19,10 +19,6 @@ header p{font-size:10px;color:var(--text-muted);margin-top:2px}
 .tab-btn{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;font-family:inherit;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .2s}
 .tab-btn.active{background:linear-gradient(135deg,var(--orange),#e8752a);border-color:var(--orange);color:#fff;box-shadow:0 2px 8px rgba(247,147,79,.35)}
 main{padding:16px}
-.loading{text-align:center;padding:60px 20px;color:var(--text-muted)}
-.loading .spin{font-size:32px;display:block;animation:spin 1s linear infinite;margin-bottom:12px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.error-box{background:rgba(247,95,95,.1);border:1px solid rgba(247,95,95,.3);border-radius:12px;padding:16px;color:var(--red);font-size:13px;text-align:center;margin:20px 0}
 .section-label{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--orange);margin:20px 0 10px;display:flex;align-items:center;gap:8px}
 .section-label::after{content:'';flex:1;height:1px;background:linear-gradient(to right,var(--orange),transparent)}
 .card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden}
@@ -72,7 +68,7 @@ main{padding:16px}
 .kojihi-box .kj-sub{font-size:10px;color:var(--text-muted);margin-top:3px}
 .matrix-wrap{overflow-x:auto;margin-top:8px;-webkit-overflow-scrolling:touch}
 .matrix-hint{font-size:10px;color:var(--text-muted);margin-bottom:6px}
-table.matrix{border-collapse:collapse;font-size:11px;min-width:100%;width:max-content}
+table.matrix{border-collapse:collapse;font-size:11px;width:max-content}
 table.matrix th,table.matrix td{border:1px solid var(--border);padding:7px 6px;text-align:center;white-space:nowrap}
 table.matrix th{background:var(--surface2);font-weight:700;font-size:10px;color:var(--text-muted)}
 table.matrix th:first-child{text-align:left;min-width:130px}
@@ -81,9 +77,6 @@ table.matrix td:first-child{text-align:left;font-weight:600;font-size:11px;backg
 .m-ng{color:var(--red);font-weight:700}
 .m-na{color:var(--text-muted)}
 .aipo-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
-.last-updated{font-size:10px;color:var(--text-muted);text-align:right;padding:8px 16px 0}
-.reload-btn{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-size:11px;padding:4px 10px;cursor:pointer;font-family:inherit}
-.reload-btn:active{background:var(--surface2)}
 #lock-screen{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;padding:24px}
 .lock-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px 24px;width:100%;max-width:320px;text-align:center}
 .lock-icon{font-size:48px;margin-bottom:16px;display:block}
@@ -96,6 +89,7 @@ table.matrix td:first-child{text-align:left;font-weight:600;font-size:11px;backg
 </style>
 </head>
 <body>
+
 <div id="lock-screen">
   <div class="lock-box">
     <span class="lock-icon">🔒</span>
@@ -106,14 +100,12 @@ table.matrix td:first-child{text-align:left;font-weight:600;font-size:11px;backg
     <div class="lock-error" id="pw-error"></div>
   </div>
 </div>
+
 <div id="site-body" style="display:none">
 <header>
   <div class="header-inner">
     <div class="header-icon">📋</div>
-    <div>
-      <h1>キャンペーン確認サイト</h1>
-      <p>社内スタッフ向け｜2026年度版</p>
-    </div>
+    <div><h1>キャンペーン確認サイト</h1><p>社内スタッフ向け｜2026年度版</p></div>
   </div>
 </header>
 <div class="tab-nav">
@@ -123,111 +115,152 @@ table.matrix td:first-child{text-align:left;font-weight:600;font-size:11px;backg
   <button class="tab-btn" onclick="switchTab('trial',this)">試験施策</button>
   <button class="tab-btn" onclick="switchTab('matrix',this)">重畳適用表</button>
 </div>
-<main id="main">
-  <div class="loading"><span class="spin">⟳</span>データを読み込み中...</div>
-</main>
+<main id="main"></main>
+</div>
 
 <script>
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbzsfsUQ1HMnX9QsDWC2TxOeldgemMwKizV41o_Zw2iZioD-kwSRpU81-kJOqacv5vFQ/exec';
-
-var campaigns = [], targets = [], combos = [], details = [];
-var currentTab = 'all';
-
-var CAT_ICONS = {limited:'📺', closed:'📹', always:'⚙️', trial:'🎓'};
-var ICON_MAP = {c1:'📺',c2:'🌐',c3:'📹',c4:'👥',c5:'🏠',c6:'🎓',c7:'🏥',c8:'⚙️',c9:'⚙️'};
-var CAT_COLOR = {limited:'rgba(79,142,247,.15)',closed:'rgba(247,95,95,.15)',always:'rgba(62,207,142,.12)',trial:'rgba(247,147,79,.15)'};
-
-
-
-
-function fmtDate(val){
-  if(!val) return '';
-  // ISO形式 (2026-02-28T15:00:00.000Z) を日本時間の yyyy/M/d に変換
-  var d = new Date(val);
-  if(!isNaN(d.getTime())){
-    // UTCに9時間足して日本時間に
-    var jst = new Date(d.getTime() + 9*60*60*1000);
-    return jst.getUTCFullYear()+'/'+(jst.getUTCMonth()+1)+'/'+jst.getUTCDate();
+var PASS='2121';
+function checkPw(){
+  if(document.getElementById('pw-input').value===PASS){
+    document.getElementById('lock-screen').style.display='none';
+    document.getElementById('site-body').style.display='block';
+    sessionStorage.setItem('auth','ok');
+    renderTab('all');
+  } else {
+    document.getElementById('pw-error').textContent='コードが違います。もう一度お試しください。';
+    document.getElementById('pw-input').value='';
   }
-  // すでに文字列の場合はそのまま
-  return val;
+}
+if(sessionStorage.getItem('auth')==='ok'){
+  document.getElementById('lock-screen').style.display='none';
+  document.getElementById('site-body').style.display='block';
+  renderTab('all');
 }
 
-function fetchSheet(sheet){
-  return fetch(GAS_URL + '?sheet=' + encodeURIComponent(sheet), {method:'GET', redirect:'follow'})
-    .then(function(r){ return r.json(); });
-}
+// ===== データ =====
+var DATA = {
+  campaigns:[
+    {id:'c1',name:'新規テレビ加入工事費無料キャンペーン',category:'limited',status:'期間限定',period:'2026/3/1 ～ 6/30',subtitle:'～ 2026年6月30日',highlight:'新規加入工事費',price_old:'29,700円',price_new:'無料',aipo:'https://app.aipo.com/apps/bbs/topics/45475',icon:'📺'},
+    {id:'c2',name:'インターネット1G 最大3ヶ月無料キャンペーン',category:'limited',status:'期間限定',period:'～ 2026年6月30日（7月末までに工事完了要）',subtitle:'～ 2026年6月30日',highlight:'工事月＋2ヶ月 = 最大3ヶ月間 1G利用料',price_old:'',price_new:'無料',aipo:'https://app.aipo.com/apps/bbs/topics/45487',icon:'🌐'},
+    {id:'c3',name:'半年半額デジ録T（P）おためしキャンペーン',category:'closed',status:'クローズド',period:'2026/3/1 ～ 6/30（在庫により休止あり）',subtitle:'～ 2026年6月30日予定',highlight:'変更月翌月から6ヶ月間 デジ録T（P）半額',price_old:'5,390円',price_new:'2,695円',aipo:'https://app.aipo.com/apps/bbs/topics/45424',icon:'📹'},
+    {id:'c8',name:'ネット工事費実質無料（新規特約）',category:'always',status:'常設',period:'',subtitle:'',highlight:'工事費24,000円 ÷ 24ヶ月 = 月々-1,000円',price_old:'',price_new:'実質無料',aipo:'',icon:'⚙️',kojihi:{title:'新規特約',total:'24,000',monthly:'-1,000'}},
+    {id:'c9',name:'ネット工事費実質無料（追加特約）',category:'always',status:'常設',period:'',subtitle:'',highlight:'工事費12,000円 ÷ 24ヶ月 = 月々-500円',price_old:'',price_new:'実質無料',aipo:'',icon:'⚙️',kojihi:{title:'追加特約',total:'12,000',monthly:'-500'}},
+    {id:'c4',name:'お友だち紹介特典',category:'always',status:'常設',period:'',subtitle:'新規・追加 対象',highlight:'紹介者＋新規加入者',price_old:'',price_new:'双方5,000円',aipo:'https://app.aipo.com/apps/bbs/topics/40920',icon:'👥'},
+    {id:'c5',name:'新築リフォーム特典',category:'always',status:'常設',period:'',subtitle:'新規 対象',highlight:'全キャンペーンと併用可',price_old:'',price_new:'',aipo:'https://app.aipo.com/apps/bbs/topics/36205',icon:'🏠'},
+    {id:'c6',name:'佐野日本大学短期大学生限定 学割',category:'trial',status:'試験施策',period:'2025/6/20 ～ 2026/6/30（トライアル中）',subtitle:'～ 2026年6月末（トライアル）',highlight:'工事翌月より月々1,100円×最大24ヶ月',price_old:'',price_new:'最大26,400円割引',aipo:'https://app.aipo.com/apps/bbs/topics/44439',icon:'🎓'},
+    {id:'c7',name:'テレビとくとくプラン（みずき佐野限定）',category:'trial',status:'試験施策',period:'終了日未定',subtitle:'終了日未定',highlight:'STB・デジ録T・BDT全コースを2台目以降と同じ料金で利用可能',price_old:'',price_new:'',aipo:'https://app.aipo.com/apps/bbs/topics/45680',icon:'🏥'},
+  ],
+  details:{
+    c1:[
+      {type:'ok',text:'テレビサービスを新規申込のお客様'},
+      {type:'ok',text:'再送信・BSダイレクト・STB・デジ録T/BDT 全プラン対象'},
+      {type:'ng',text:'対応集合住宅は対象外（未対応集合は可）'},
+      {type:'note',text:'各月先着10名・期間中計40名（※申込件数に上限なし。営業トーク用）'},
+      {type:'note',text:'最低利用期間：再送信2年 / 機器設置あり1年（違約金29,700円）'},
+      {type:'note',text:'申し込みと同時のコース変更予約は不可（アップはいつでも可）'},
+      {type:'note',text:'一契約一回限り'},
+    ],
+    c2:[
+      {type:'ok',text:'佐野市内・工事可能物件でネット1Gを新規または追加申込のお客様'},
+      {type:'ok',text:'集合住宅でFTTH個人引込の場合も対象（HFCはFTTH切替後対象）'},
+      {type:'ng',text:'1G以外のコース・既存コースアップは対象外'},
+      {type:'note',text:'無料期間中のコースダウン不可'},
+      {type:'note',text:'最終月に連絡なければ4ヶ月目から通常料金で自動課金'},
+      {type:'note',text:'支払方法：口座振替・クレジット払いのみ'},
+      {type:'note',text:'過去1年以内の滞納歴がある場合は対象外'},
+      {type:'note',text:'一契約一回限り'},
+    ],
+    c3:[
+      {type:'ok',text:'FTTH工事済み・既加入者（再送信・STB・デジ録T(M)(E)）'},
+      {type:'ok',text:'新規・追加（BDT希望者以外全員）'},
+      {type:'ng',text:'対応集合住宅、既存BDT/デジ録(P)利用者は対象外'},
+      {type:'ng',text:'前回利用後コースダウンしたお客様は対象外'},
+      {type:'note',text:'半額期間中のコースダウン不可'},
+      {type:'note',text:'6ヶ月目に連絡なければ7ヶ月目から通常料金（5,390円）で自動課金'},
+      {type:'note',text:'チラシなし。スタッフから対象顧客に直接案内'},
+      {type:'note',text:'申込月含む3ヶ月以内に設置・コースUPできない場合は適用外'},
+      {type:'note',text:'支払方法：口座振替・クレジット払いのみ'},
+      {type:'note',text:'一契約一回限り'},
+    ],
+    c8:[{type:'note',text:'ネット継続利用が前提。途中解約の場合は残額請求あり'}],
+    c9:[{type:'note',text:'ネット継続利用が前提。途中解約の場合は残額請求あり'}],
+    c4:[
+      {type:'note',text:'取次店へ7,000円（新規・引込あり）'},
+      {type:'note',text:'取次店へ4,000円（アップセル・引込あり）'},
+      {type:'note',text:'取次店へ3,000円（アップセル・引込なし）'},
+      {type:'note',text:'クオカード3,000円＋番組グッズ（新規・引込なし）'},
+    ],
+    c5:[
+      {type:'ok',text:'全てのキャンペーンと併用可'},
+    ],
+    c6:[
+      {type:'ok',text:'開通日時点で佐野日本大学短期大学に在学中または入学決定していること'},
+      {type:'ok',text:'ネット30M・1G・10Gコースを新規または追加契約'},
+      {type:'ok',text:'追加申込の場合、支払い遅延・未納がないこと'},
+      {type:'ng',text:'現在佐野ケーブルテレビのネット契約中のお客様は対象外'},
+      {type:'note',text:'支払優先順位：①親御様クレカ ②親御様口座 ③学生クレカ ④学生口座'},
+      {type:'note',text:'賃貸物件の場合はクレカのみ受付'},
+    ],
+    c7:[
+      {type:'ok',text:'対象施設で新規設置のお客様：工事翌月の初回請求分から'},
+      {type:'note',text:'既設置のお客様：同施設で新規契約発生翌月より料金変更'},
+      {type:'note',text:'原則クレジットカードのみ'},
+      {type:'note',text:'69歳以下：クレカ必須。不所持の場合はお断り'},
+      {type:'note',text:'70歳以上：クレカ不所持の場合のみ口座振替可'},
+    ],
+  },
+  combos:{
+    c1:[{to:'c2',r:'na'},{to:'c3',r:'ok'},{to:'c6',r:'na'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c7',r:'na'}],
+    c2:[{to:'c1',r:'na'},{to:'c3',r:'na'},{to:'c6',r:'ng'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c7',r:'ok'},{to:'c8',r:'ok'},{to:'c9',r:'ok'}],
+    c3:[{to:'c1',r:'ok'},{to:'c2',r:'na'},{to:'c6',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c7',r:'ng'}],
+    c6:[{to:'c1',r:'na'},{to:'c2',r:'ng'},{to:'c3',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c7',r:'na'},{to:'c8',r:'ok'},{to:'c9',r:'ok'}],
+    c7:[{to:'c1',r:'na'},{to:'c2',r:'ok'},{to:'c3',r:'ng'},{to:'c6',r:'na'},{to:'c4',r:'ok'},{to:'c5',r:'na'}],
+    c8:[{to:'c2',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c6',r:'ok'}],
+    c9:[{to:'c2',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c6',r:'ok'}],
+  },
+  targetLabels:{c1:'新規TV工事費無料',c2:'1G 3ヶ月無料',c3:'半々デジ録T（P）',c4:'お友だち紹介',c5:'新築リフォーム',c6:'佐野短大学割',c7:'テレビとくとくプラン',c8:'ネット工事費実質無料（新規）',c9:'ネット工事費実質無料（追加）'},
+};
 
-function loadAll(){
-  document.getElementById('main').innerHTML='<div class="loading"><span class="spin">⟳</span>データを読み込み中...</div>';
-  Promise.all([fetchSheet('campaigns'),fetchSheet('targets'),fetchSheet('combo'),fetchSheet('details')])
-    .then(function(res){
-      campaigns=res[0]; targets=res[1]; combos=res[2]; details=res[3];
-      renderTab(currentTab);
-    })
-    .catch(function(e){
-      document.getElementById('main').innerHTML='<div class="error-box">❌ データの読み込みに失敗しました。<br><small>'+e.message+'</small></div>';
-    });
-}
-
-function getDetails(id){
-  return details.filter(function(d){return d.campaign_id===id;});
-}
-
-function getCombos(id){
-  return combos.filter(function(c){return c.from_id===id;});
-}
-
-function getTargetLabel(id){
-  var t=targets.find(function(t){return t.id===id;});
-  return t?t.label:id;
-}
+var CAT_COLOR={limited:'rgba(79,142,247,.15)',closed:'rgba(247,95,95,.15)',always:'rgba(62,207,142,.12)',trial:'rgba(247,147,79,.15)'};
 
 function buildCard(c){
-  var dets=getDetails(c.id);
-  var comb=getCombos(c.id);
-  var targetOk=dets.filter(function(d){return d.type==='target_ok';});
-  var targetNg=dets.filter(function(d){return d.type==='target_ng';});
-  var notes=dets.filter(function(d){return d.type==='note';});
+  var dets=DATA.details[c.id]||[];
+  var comb=DATA.combos[c.id]||[];
 
-  var periodHtml='';
-  var ps=fmtDate(c.period_start), pe=fmtDate(c.period_end);
-  if(ps||pe){
-    var pval=(ps||'')+(ps&&pe?' ～ ':pe?'～ ':'')+( pe||'');
-    if(c.period_note) pval+='（'+c.period_note+'）';
-    periodHtml='<div class="period-bar"><span class="label">期間</span><span class="value">'+pval+'</span></div>';
-  } else if(c.period_note){
-    periodHtml='<div class="period-bar"><span class="label">備考</span><span class="value">'+c.period_note+'</span></div>';
-  }
+  var periodHtml=c.period?'<div class="period-bar"><span class="label">期間</span><span class="value">'+c.period+'</span></div>':'';
 
-  var highlightHtml='';
+  var hlHtml='';
   if(c.highlight){
-    highlightHtml='<div class="highlight">'+c.highlight+'<br>';
-    if(c.price_old) highlightHtml+='<span class="price-old">'+c.price_old+'</span> → ';
-    if(c.price_new) highlightHtml+='<span class="price-new">'+c.price_new+'</span>';
-    highlightHtml+='</div>';
+    hlHtml='<div class="highlight">'+c.highlight+'<br>';
+    if(c.price_old) hlHtml+='<span class="price-old">'+c.price_old+'</span> → ';
+    if(c.price_new) hlHtml+='<span class="price-new">'+c.price_new+'</span>';
+    hlHtml+='</div>';
   }
 
-  // 工事費ボックス（c8/c9）
-  var kojihiHtml='';
-  if(c.id==='c8'){
-    kojihiHtml='<div class="kojihi-grid"><div class="kojihi-box"><div class="kj-label">工事費総額</div><div class="kj-title">新規特約</div><div class="kj-price">24,000<span style="font-size:12px">円</span></div><div class="kj-sub">÷ 24ヶ月</div></div><div class="kojihi-box"><div class="kj-label">毎月の値引き</div><div class="kj-title">工事月から24ヶ月</div><div class="kj-price">−1,000<span style="font-size:12px">円/月</span></div><div class="kj-sub">継続利用で実質無料</div></div></div>';
-  } else if(c.id==='c9'){
-    kojihiHtml='<div class="kojihi-grid"><div class="kojihi-box"><div class="kj-label">工事費総額</div><div class="kj-title">追加特約</div><div class="kj-price">12,000<span style="font-size:12px">円</span></div><div class="kj-sub">÷ 24ヶ月</div></div><div class="kojihi-box"><div class="kj-label">毎月の値引き</div><div class="kj-title">工事月から24ヶ月</div><div class="kj-price">−500<span style="font-size:12px">円/月</span></div><div class="kj-sub">継続利用で実質無料</div></div></div>';
+  var kjHtml='';
+  if(c.kojihi){
+    kjHtml='<div class="kojihi-grid">'
+      +'<div class="kojihi-box"><div class="kj-label">工事費総額</div><div class="kj-title">'+c.kojihi.title+'</div><div class="kj-price">'+c.kojihi.total+'<span style="font-size:12px">円</span></div><div class="kj-sub">÷ 24ヶ月</div></div>'
+      +'<div class="kojihi-box"><div class="kj-label">毎月の値引き</div><div class="kj-title">工事月から24ヶ月</div><div class="kj-price">'+c.kojihi.monthly+'<span style="font-size:12px">円/月</span></div><div class="kj-sub">継続利用で実質無料</div></div>'
+      +'</div>';
   }
 
-  var targetHtml='';
-  if(targetOk.length||targetNg.length){
-    targetHtml='<div class="info-section"><div class="info-section-title">対象者</div>';
-    targetOk.forEach(function(d){targetHtml+='<div class="info-row ok"><span class="dot">✓</span>'+d.content+'</div>';});
-    targetNg.forEach(function(d){targetHtml+='<div class="info-row warning"><span class="dot">✗</span>'+d.content+'</div>';});
-    targetHtml+='</div>';
+  var okList=dets.filter(function(d){return d.type==='ok';});
+  var ngList=dets.filter(function(d){return d.type==='ng';});
+  var noteList=dets.filter(function(d){return d.type==='note';});
+
+  var tgtHtml='';
+  if(okList.length||ngList.length){
+    tgtHtml='<div class="info-section"><div class="info-section-title">対象者</div>';
+    okList.forEach(function(d){tgtHtml+='<div class="info-row ok"><span class="dot">✓</span>'+d.text+'</div>';});
+    ngList.forEach(function(d){tgtHtml+='<div class="info-row warning"><span class="dot">✗</span>'+d.text+'</div>';});
+    tgtHtml+='</div>';
   }
 
   var noteHtml='';
-  if(notes.length){
+  if(noteList.length){
     noteHtml='<div class="info-section"><div class="info-section-title">注意事項</div>';
-    notes.forEach(function(d){noteHtml+='<div class="info-row"><span class="dot">・</span>'+d.content+'</div>';});
+    noteList.forEach(function(d){noteHtml+='<div class="info-row"><span class="dot">・</span>'+d.text+'</div>';});
     noteHtml+='</div>';
   }
 
@@ -235,110 +268,74 @@ function buildCard(c){
   if(comb.length){
     comboHtml='<div class="combo-title">重畳適用</div><div class="combo-grid">';
     comb.forEach(function(cb){
-      var label=getTargetLabel(cb.to_id);
-      var badge=cb.result==='ok'?'<span class="combo-badge combo-ok">✅ 可</span>':cb.result==='ng'?'<span class="combo-badge combo-ng">❌ 不可</span>':'<span class="combo-badge combo-na">— 対象外</span>';
+      var label=DATA.targetLabels[cb.to]||cb.to;
+      var badge=cb.r==='ok'?'<span class="combo-badge combo-ok">✅ 可</span>':cb.r==='ng'?'<span class="combo-badge combo-ng">❌ 不可</span>':'<span class="combo-badge combo-na">— 対象外</span>';
       comboHtml+='<div class="combo-row"><span class="combo-name">'+label+'</span>'+badge+'</div>';
     });
     comboHtml+='</div>';
   }
 
-  var aipoHtml='';
-  if(c.aipo_url){
-    aipoHtml='<a href="'+c.aipo_url+'" target="_blank" class="aipo-link"><span class="link-icon">🔗</span><span class="link-text">Aipo 社内告知を確認する</span><span class="link-arrow">→</span></a>';
-  }
+  var aipoHtml=c.aipo?'<a href="'+c.aipo+'" target="_blank" class="aipo-link"><span class="link-icon">🔗</span><span class="link-text">Aipo 社内告知を確認する</span><span class="link-arrow">→</span></a>':'';
 
-  var icon=ICON_MAP[c.id]||'📌';
-  var bgColor=CAT_COLOR[c.category]||'rgba(79,142,247,.15)';
-
-  return '<div class="card" data-group="'+c.category+'" id="card-'+c.id+'">'
-    +'<div class="card-header" onclick="toggleCard(\'card-'+c.id+'\')">'
-    +'<div class="card-icon" style="background:'+bgColor+'">'+icon+'</div>'
+  return '<div class="card" data-cat="'+c.category+'" id="card-'+c.id+'">'
+    +'<div class="card-header" onclick="this.closest(\'.card\').classList.toggle(\'open\')">'
+    +'<div class="card-icon" style="background:'+CAT_COLOR[c.category]+'">'+c.icon+'</div>'
     +'<div class="card-title-wrap">'
     +'<span class="card-category cat-'+c.category+'">'+c.status+'</span>'
     +'<div class="card-title">'+c.name+'</div>'
-    +(pe?'<div class="card-subtitle">～ '+pe+'</div>':c.period_note?'<div class="card-subtitle">'+c.period_note+'</div>':'')
-    +'</div>'
-    +'<div class="card-chevron">▾</div>'
-    +'</div>'
+    +(c.subtitle?'<div class="card-subtitle">'+c.subtitle+'</div>':'')
+    +'</div><div class="card-chevron">▾</div></div>'
     +periodHtml
-    +'<div class="card-body">'+highlightHtml+kojihiHtml+targetHtml+noteHtml+comboHtml+aipoHtml+'</div>'
+    +'<div class="card-body">'+hlHtml+kjHtml+tgtHtml+noteHtml+comboHtml+aipoHtml+'</div>'
     +'</div>';
 }
 
 function buildMatrix(){
-  var cols=targets.filter(function(t){return ['c1','c2','c3','c5','c6','c7'].indexOf(t.id)>=0;});
-  var rows=campaigns.filter(function(c){return ['c1','c2','c3','c6','c7','c8','c9'].indexOf(c.id)>=0;});
-
-  var html='<div class="section-label">重畳適用一覧表</div>'
-    +'<p class="matrix-hint">← 横スクロールできます</p>'
-    +'<div class="matrix-wrap"><table class="matrix"><thead><tr><th>キャンペーン</th>';
-  cols.forEach(function(t){html+='<th>'+t.label.replace(/（/,'<br>（')+'</th>';});
+  var cols=['c1','c2','c3','c5','c6','c7'];
+  var rows=['c1','c2','c3','c6','c7','c8','c9'];
+  var html='<div class="section-label">重畳適用一覧表</div><p class="matrix-hint">← 横スクロールできます</p><div class="matrix-wrap"><table class="matrix"><thead><tr><th>キャンペーン</th>';
+  cols.forEach(function(id){html+='<th>'+DATA.targetLabels[id].replace('（','<br>（')+'</th>';});
   html+='</tr></thead><tbody>';
-
-  rows.forEach(function(c){
-    html+='<tr><td>'+c.name.replace(/（/,'<br>（')+'</td>';
-    cols.forEach(function(t){
-      if(t.id===c.id){html+='<td class="m-na">—</td>';return;}
-      var cb=combos.find(function(x){return x.from_id===c.id&&x.to_id===t.id;});
-      var r=cb?cb.result:'na';
+  rows.forEach(function(rid){
+    var c=DATA.campaigns.find(function(x){return x.id===rid;});
+    html+='<tr><td>'+c.name.replace('（','<br>（')+'</td>';
+    cols.forEach(function(cid){
+      if(cid===rid){html+='<td class="m-na">—</td>';return;}
+      var cb=(DATA.combos[rid]||[]).find(function(x){return x.to===cid;});
+      var r=cb?cb.r:'na';
       html+='<td class="m-'+r+'">'+(r==='ok'?'✅':r==='ng'?'❌':'—')+'</td>';
     });
     html+='</tr>';
   });
-
   html+='</tbody></table></div>';
   html+='<div style="margin-top:14px;font-size:11px;color:var(--text-muted);line-height:1.8">'
     +'<div>✅ = 重畳適用可　　❌ = 重畳適用不可　　— = 対象外</div>'
     +'<div style="margin-top:4px">※ お友だち紹介・新築リフォームは原則全キャンペーンと併用可</div>'
-    +'<div>※ ネット工事費実質無料はネット関係キャンペーン全て併用可</div>'
-    +'</div>';
-
-  // Aipo links
+    +'<div>※ ネット工事費実質無料はネット関係キャンペーン全て併用可</div></div>';
   html+='<div class="section-label" style="margin-top:24px">Aipo リンク一覧</div><div class="aipo-list">';
-  campaigns.filter(function(c){return c.aipo_url;}).forEach(function(c){
-    html+='<a href="'+c.aipo_url+'" target="_blank" class="aipo-link"><span class="link-icon">'+(ICON_MAP[c.id]||'📌')+'</span><span class="link-text">'+c.name+'</span><span class="link-arrow">→</span></a>';
+  DATA.campaigns.filter(function(c){return c.aipo;}).forEach(function(c){
+    html+='<a href="'+c.aipo+'" target="_blank" class="aipo-link"><span class="link-icon">'+c.icon+'</span><span class="link-text">'+c.name+'</span><span class="link-arrow">→</span></a>';
   });
   html+='</div>';
   return html;
 }
 
 function renderTab(tab){
-  currentTab=tab;
   var main=document.getElementById('main');
-
-  var now=new Date();
-  var updated='最終更新：'+now.getHours()+':'+('0'+now.getMinutes()).slice(-2);
-  var topBar='<div class="last-updated">'+updated+' <button class="reload-btn" onclick="loadAll()">🔄 再読込</button></div>';
-
-  if(tab==='matrix'){
-    main.innerHTML=topBar+buildMatrix();
-    return;
-  }
-
-  var groups={limited:[],closed:[],always:[],trial:[]};
-  campaigns.forEach(function(c){
-    if(tab==='all'||c.category===tab){
-      if(groups[c.category]) groups[c.category].push(buildCard(c));
-    }
-  });
-
-  var html=topBar;
+  if(tab==='matrix'){main.innerHTML=buildMatrix();return;}
   var sections=[
     {key:'limited',label:'期間限定キャンペーン'},
-    {key:'closed', label:'期間限定キャンペーン（クローズド）'},
-    {key:'always', label:'常設キャンペーン'},
-    {key:'trial',  label:'試験施策'},
+    {key:'closed',label:'期間限定キャンペーン（クローズド）'},
+    {key:'always',label:'常設キャンペーン'},
+    {key:'trial',label:'試験施策'},
   ];
+  var html='';
   sections.forEach(function(s){
-    if(groups[s.key]&&groups[s.key].length){
-      html+='<div class="section-label">'+s.label+'</div>'+groups[s.key].join('');
-    }
+    var cards=DATA.campaigns.filter(function(c){return c.category===s.key&&(tab==='all'||c.category===tab);});
+    if(cards.length) html+='<div class="section-label">'+s.label+'</div>'+cards.map(buildCard).join('');
   });
-
   main.innerHTML=html;
 }
-
-function toggleCard(id){document.getElementById(id).classList.toggle('open')}
 
 function switchTab(name,btn){
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
@@ -346,29 +343,8 @@ function switchTab(name,btn){
   renderTab(name);
 }
 
-// パスワード認証
-var PASS = '2121';
-function checkPw(){
-  var val = document.getElementById('pw-input').value;
-  if(val === PASS){
-    document.getElementById('lock-screen').style.display='none';
-    document.getElementById('site-body').style.display='block';
-    sessionStorage.setItem('auth','ok');
-    loadAll();
-  } else {
-    document.getElementById('pw-error').textContent='コードが違います。もう一度お試しください。';
-    document.getElementById('pw-input').value='';
-    document.getElementById('pw-input').focus();
-  }
-}
-
-// セッション中は再入力不要
-if(sessionStorage.getItem('auth')==='ok'){
-  document.getElementById('lock-screen').style.display='none';
-  document.getElementById('site-body').style.display='block';
-  loadAll();
-}
+if(sessionStorage.getItem('auth')==='ok') renderTab('all');
 </script>
-</div><!-- /site-body -->
+</div>
 </body>
 </html>
