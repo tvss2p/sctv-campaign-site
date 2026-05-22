@@ -148,7 +148,7 @@ var DATA = {
     {id:'c4',name:'お友だち紹介特典',category:'always',status:'常設',period:'',subtitle:'新規・追加 対象',highlight:'紹介者＋新規加入者',price_old:'',price_new:'双方5,000円',aipo:'https://app.aipo.com/apps/bbs/topics/40920',icon:'👥'},
     {id:'c5',name:'新築リフォーム特典',category:'always',status:'常設',period:'',subtitle:'新規 対象',highlight:'全キャンペーンと併用可',price_old:'',price_new:'',aipo:'https://app.aipo.com/apps/bbs/topics/36205',icon:'🏠'},
     {id:'c6',name:'佐野日本大学短期大学生限定 学割',category:'trial',status:'試験施策',period:'2025/6/20 ～ 2026/6/30（トライアル中）',subtitle:'～ 2026年6月末（トライアル）',highlight:'工事翌月より月々1,100円×最大24ヶ月',price_old:'',price_new:'最大26,400円割引',aipo:'https://app.aipo.com/apps/bbs/topics/44439',icon:'🎓'},
-    {id:'c7',name:'テレビとくとくプラン（みずき佐野限定）',category:'trial',status:'試験施策',period:'終了日未定',subtitle:'終了日未定',highlight:'STB・デジ録T・BDT全コースを2台目以降と同じ料金で利用可能',price_old:'',price_new:'',aipo:'https://app.aipo.com/apps/bbs/topics/45680',icon:'🏥'},
+    {id:'c7',name:'テレビとくとくプラン（対象施設限定）',category:'trial',status:'試験施策',period:'終了日未定',subtitle:'終了日未定',highlight:'STB・デジ録T・BDT全コースを2台目以降と同じ料金で利用可能',price_old:'',price_new:'',aipo:'https://app.aipo.com/apps/bbs/topics/45680',icon:'🏥'},
   ],
   details:{
     c1:[
@@ -210,15 +210,15 @@ var DATA = {
     ],
   },
   combos:{
-    c1:[{to:'c2',r:'na'},{to:'c3',r:'ok'},{to:'c6',r:'na'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c7',r:'na'}],
-    c2:[{to:'c1',r:'na'},{to:'c3',r:'na'},{to:'c6',r:'ng'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c7',r:'ok'},{to:'c8',r:'ok'},{to:'c9',r:'ok'}],
-    c3:[{to:'c1',r:'ok'},{to:'c2',r:'na'},{to:'c6',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c7',r:'ng'}],
-    c6:[{to:'c1',r:'na'},{to:'c2',r:'ng'},{to:'c3',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c7',r:'na'},{to:'c8',r:'ok'},{to:'c9',r:'ok'}],
-    c7:[{to:'c1',r:'na'},{to:'c2',r:'ok'},{to:'c3',r:'ng'},{to:'c6',r:'na'},{to:'c4',r:'ok'},{to:'c5',r:'na'}],
+    c1:[{to:'c3',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'}],
+    c2:[{to:'c6',r:'ng'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c7',r:'ok'},{to:'c8',r:'ok'},{to:'c9',r:'ok'}],
+    c3:[{to:'c1',r:'ok'},{to:'c6',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c7',r:'ng'}],
+    c6:[{to:'c2',r:'ng'},{to:'c3',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c8',r:'ok'},{to:'c9',r:'ok'}],
+    c7:[{to:'c2',r:'ok'},{to:'c3',r:'ng'},{to:'c4',r:'ng'}],
     c8:[{to:'c2',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c6',r:'ok'}],
     c9:[{to:'c2',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c6',r:'ok'}],
   },
-  targetLabels:{c1:'新規TV工事費無料',c2:'1G 3ヶ月無料',c3:'半々デジ録T（P）',c4:'お友だち紹介',c5:'新築リフォーム',c6:'佐野短大学割',c7:'テレビとくとくプラン',c8:'ネット工事費実質無料（新規）',c9:'ネット工事費実質無料（追加）'},
+  targetLabels:{c1:'新規TV工事費無料',c2:'1G 3ヶ月無料',c3:'半々デジ録T（P）',c4:'お友だち紹介',c5:'新築リフォーム',c6:'佐野短大学割',c7:'テレビとくとくプラン（対象施設限定）',c8:'ネット工事費実質無料（新規）',c9:'ネット工事費実質無料（追加）'},
 };
 
 var CAT_COLOR={limited:'rgba(79,142,247,.15)',closed:'rgba(247,95,95,.15)',always:'rgba(62,207,142,.12)',trial:'rgba(247,147,79,.15)'};
