@@ -119,107 +119,53 @@ table.matrix td:first-child{text-align:left;font-weight:600;font-size:11px;backg
 </div>
 
 <script>
-var PASS='2121';
-function checkPw(){
-  if(document.getElementById('pw-input').value===PASS){
-    document.getElementById('lock-screen').style.display='none';
-    document.getElementById('site-body').style.display='block';
-    sessionStorage.setItem('auth','ok');
-    renderTab('all');
-  } else {
-    document.getElementById('pw-error').textContent='コードが違います。もう一度お試しください。';
+var BLOB='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';
+var DATA=null;
+
+async function checkPw(){
+  var pw=document.getElementById('pw-input').value;
+  var btn=document.querySelector('.lock-btn');
+  var err=document.getElementById('pw-error');
+  if(!pw)return;
+  btn.textContent='認証中...';
+  btn.disabled=true;
+  try{
+    var json=await decryptBlob(BLOB,pw);
+    DATA=JSON.parse(json);
+    sessionStorage.setItem('siteData',json);
+    showSite();
+  }catch(e){
+    err.textContent='コードが違います。もう一度お試しください。';
     document.getElementById('pw-input').value='';
+    btn.textContent='ログイン';
+    btn.disabled=false;
   }
 }
-if(sessionStorage.getItem('auth')==='ok'){
+
+async function decryptBlob(b64,pw){
+  var buf=Uint8Array.from(atob(b64),function(c){return c.charCodeAt(0);});
+  var salt=buf.slice(0,16);
+  var iv=buf.slice(16,28);
+  var data=buf.slice(28);
+  var km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  var key=await crypto.subtle.deriveKey(
+    {name:'PBKDF2',salt:salt,iterations:100000,hash:'SHA-256'},
+    km,{name:'AES-GCM',length:256},false,['decrypt']
+  );
+  var dec=await crypto.subtle.decrypt({name:'AES-GCM',iv:iv},key,data);
+  return new TextDecoder().decode(dec);
+}
+
+function showSite(){
   document.getElementById('lock-screen').style.display='none';
   document.getElementById('site-body').style.display='block';
   renderTab('all');
 }
 
-// ===== データ =====
-var DATA = {
-  campaigns:[
-    {id:'c1',name:'新規テレビ加入工事費無料キャンペーン',category:'limited',status:'期間限定',period:'2026/3/1 ～ 6/30',subtitle:'～ 2026年6月30日',highlight:'新規加入工事費',price_old:'29,700円',price_new:'無料',aipo:'https://app.aipo.com/apps/bbs/topics/45475',icon:'📺'},
-    {id:'c2',name:'インターネット1G 最大3ヶ月無料キャンペーン',category:'limited',status:'期間限定',period:'～ 2026年6月30日（7月末までに工事完了要）',subtitle:'～ 2026年6月30日',highlight:'工事月＋2ヶ月 = 最大3ヶ月間 1G利用料',price_old:'',price_new:'無料',aipo:'https://app.aipo.com/apps/bbs/topics/45487',icon:'🌐'},
-    {id:'c3',name:'半年半額デジ録T（P）おためしキャンペーン',category:'closed',status:'クローズド',period:'2026/3/1 ～ 6/30（在庫により休止あり）',subtitle:'～ 2026年6月30日予定',highlight:'変更月翌月から6ヶ月間 デジ録T（P）半額',price_old:'5,390円',price_new:'2,695円',aipo:'https://app.aipo.com/apps/bbs/topics/45424',icon:'📹'},
-    {id:'c8',name:'ネット工事費実質無料（新規特約）',category:'always',status:'常設',period:'',subtitle:'',highlight:'工事費24,000円 ÷ 24ヶ月 = 月々-1,000円',price_old:'',price_new:'実質無料',aipo:'',icon:'⚙️',kojihi:{title:'新規特約',total:'24,000',monthly:'-1,000'}},
-    {id:'c9',name:'ネット工事費実質無料（追加特約）',category:'always',status:'常設',period:'',subtitle:'',highlight:'工事費12,000円 ÷ 24ヶ月 = 月々-500円',price_old:'',price_new:'実質無料',aipo:'',icon:'⚙️',kojihi:{title:'追加特約',total:'12,000',monthly:'-500'}},
-    {id:'c4',name:'お友だち紹介特典',category:'always',status:'常設',period:'',subtitle:'新規・追加 対象',highlight:'紹介者＋新規加入者',price_old:'',price_new:'双方5,000円',aipo:'https://app.aipo.com/apps/bbs/topics/40920',icon:'👥'},
-    {id:'c5',name:'新築リフォーム特典',category:'always',status:'常設',period:'',subtitle:'新規 対象',highlight:'全キャンペーンと併用可',price_old:'',price_new:'',aipo:'https://app.aipo.com/apps/bbs/topics/36205',icon:'🏠'},
-    {id:'c6',name:'佐野日本大学短期大学生限定 学割',category:'trial',status:'試験施策',period:'2025/6/20 ～ 2026/6/30（トライアル中）',subtitle:'～ 2026年6月末（トライアル）',highlight:'工事翌月より月々1,100円×最大24ヶ月',price_old:'',price_new:'最大26,400円割引',aipo:'https://app.aipo.com/apps/bbs/topics/44439',icon:'🎓'},
-    {id:'c7',name:'テレビとくとくプラン（対象施設限定）',category:'trial',status:'試験施策',period:'終了日未定',subtitle:'終了日未定',highlight:'STB・デジ録T・BDT全コースを2台目以降と同じ料金で利用可能',price_old:'',price_new:'',aipo:'https://app.aipo.com/apps/bbs/topics/45680',icon:'🏥'},
-  ],
-  details:{
-    c1:[
-      {type:'ok',text:'テレビサービスを新規申込のお客様'},
-      {type:'ok',text:'再送信・BSダイレクト・STB・デジ録T/BDT 全プラン対象'},
-      {type:'ng',text:'対応集合住宅は対象外（未対応集合は可）'},
-      {type:'note',text:'各月先着10名・期間中計40名（※申込件数に上限なし。営業トーク用）'},
-      {type:'note',text:'最低利用期間：再送信2年 / 機器設置あり1年（違約金29,700円）'},
-      {type:'note',text:'申し込みと同時のコース変更予約は不可（アップはいつでも可）'},
-      {type:'note',text:'一契約一回限り'},
-    ],
-    c2:[
-      {type:'ok',text:'佐野市内・工事可能物件でネット1Gを新規または追加申込のお客様'},
-      {type:'ok',text:'集合住宅でFTTH個人引込の場合も対象（HFCはFTTH切替後対象）'},
-      {type:'ng',text:'1G以外のコース・既存コースアップは対象外'},
-      {type:'note',text:'無料期間中のコースダウン不可'},
-      {type:'note',text:'最終月に連絡なければ4ヶ月目から通常料金で自動課金'},
-      {type:'note',text:'支払方法：口座振替・クレジット払いのみ'},
-      {type:'note',text:'過去1年以内の滞納歴がある場合は対象外'},
-      {type:'note',text:'一契約一回限り'},
-    ],
-    c3:[
-      {type:'ok',text:'FTTH工事済み・既加入者（再送信・STB・デジ録T(M)(E)）'},
-      {type:'ok',text:'新規・追加（BDT希望者以外全員）'},
-      {type:'ng',text:'対応集合住宅、既存BDT/デジ録(P)利用者は対象外'},
-      {type:'ng',text:'前回利用後コースダウンしたお客様は対象外'},
-      {type:'note',text:'半額期間中のコースダウン不可'},
-      {type:'note',text:'6ヶ月目に連絡なければ7ヶ月目から通常料金（5,390円）で自動課金'},
-      {type:'note',text:'チラシなし。スタッフから対象顧客に直接案内'},
-      {type:'note',text:'申込月含む3ヶ月以内に設置・コースUPできない場合は適用外'},
-      {type:'note',text:'支払方法：口座振替・クレジット払いのみ'},
-      {type:'note',text:'一契約一回限り'},
-    ],
-    c8:[{type:'note',text:'ネット継続利用が前提。途中解約の場合は残額請求あり'}],
-    c9:[{type:'note',text:'ネット継続利用が前提。途中解約の場合は残額請求あり'}],
-    c4:[
-      {type:'note',text:'取次店へ7,000円（新規・引込あり）'},
-      {type:'note',text:'取次店へ4,000円（アップセル・引込あり）'},
-      {type:'note',text:'取次店へ3,000円（アップセル・引込なし）'},
-      {type:'note',text:'クオカード3,000円＋番組グッズ（新規・引込なし）'},
-    ],
-    c5:[
-      {type:'ok',text:'全てのキャンペーンと併用可'},
-    ],
-    c6:[
-      {type:'ok',text:'開通日時点で佐野日本大学短期大学に在学中または入学決定していること'},
-      {type:'ok',text:'ネット30M・1G・10Gコースを新規または追加契約'},
-      {type:'ok',text:'追加申込の場合、支払い遅延・未納がないこと'},
-      {type:'ng',text:'現在佐野ケーブルテレビのネット契約中のお客様は対象外'},
-      {type:'note',text:'支払優先順位：①親御様クレカ ②親御様口座 ③学生クレカ ④学生口座'},
-      {type:'note',text:'賃貸物件の場合はクレカのみ受付'},
-    ],
-    c7:[
-      {type:'ok',text:'対象施設で新規設置のお客様：工事翌月の初回請求分から'},
-      {type:'note',text:'既設置のお客様：同施設で新規契約発生翌月より料金変更'},
-      {type:'note',text:'原則クレジットカードのみ'},
-      {type:'note',text:'69歳以下：クレカ必須。不所持の場合はお断り'},
-      {type:'note',text:'70歳以上：クレカ不所持の場合のみ口座振替可'},
-    ],
-  },
-  combos:{
-    c1:[{to:'c3',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'}],
-    c2:[{to:'c6',r:'ng'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c7',r:'ok'},{to:'c8',r:'ok'},{to:'c9',r:'ok'}],
-    c3:[{to:'c1',r:'ok'},{to:'c6',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c7',r:'ng'}],
-    c6:[{to:'c2',r:'ng'},{to:'c3',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c8',r:'ok'},{to:'c9',r:'ok'}],
-    c7:[{to:'c2',r:'ok'},{to:'c3',r:'ng'},{to:'c4',r:'ng'}],
-    c8:[{to:'c2',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c6',r:'ok'}],
-    c9:[{to:'c2',r:'ok'},{to:'c4',r:'ok'},{to:'c5',r:'ok'},{to:'c6',r:'ok'}],
-  },
-  targetLabels:{c1:'新規TV工事費無料',c2:'1G 3ヶ月無料',c3:'半々デジ録T（P）',c4:'お友だち紹介',c5:'新築リフォーム',c6:'佐野短大学割',c7:'テレビとくとくプラン（対象施設限定）',c8:'ネット工事費実質無料（新規）',c9:'ネット工事費実質無料（追加）'},
-};
+(function(){
+  var d=sessionStorage.getItem('siteData');
+  if(d){try{DATA=JSON.parse(d);showSite();}catch(e){sessionStorage.removeItem('siteData');}}
+})();
 
 var CAT_COLOR={limited:'rgba(79,142,247,.15)',closed:'rgba(247,95,95,.15)',always:'rgba(62,207,142,.12)',trial:'rgba(247,147,79,.15)'};
 
@@ -343,7 +289,6 @@ function switchTab(name,btn){
   renderTab(name);
 }
 
-if(sessionStorage.getItem('auth')==='ok') renderTab('all');
 </script>
 </div>
 </body>
