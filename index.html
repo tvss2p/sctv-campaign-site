@@ -216,7 +216,12 @@ function applyTheme(){
 
 function buildCard(c){
   var dets=DATA.details[c.id]||[];
-  var comb=DATA.combos[c.id]||[];
+  var act=activeSet();
+  // 重畳リストは、基準日に終了済みのキャンペーンを除外（取次店紹介など非キャンペーン項目は残す）
+  var comb=(DATA.combos[c.id]||[]).filter(function(cb){
+    var tgt=DATA.campaigns.find(function(x){return x.id===cb.to;});
+    return tgt?act[cb.to]:true;
+  });
 
   var periodHtml=c.period?'<div class="period-bar"><span class="label">期間</span><span class="value">'+c.period+'</span></div>':'';
 
