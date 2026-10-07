@@ -84,6 +84,8 @@ table.matrix td:first-child{text-align:left;font-weight:600;font-size:11px;backg
 .m-ng{color:var(--ng);font-weight:700}
 .m-na{color:var(--text-muted)}
 .aipo-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.site-footer{text-align:center;padding:8px 16px 0}
+.site-footer a{display:inline-block;font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 14px;border:1px solid var(--border);border-radius:999px;background:var(--surface)}
 .notice{font-size:11px;font-weight:700;text-align:center;padding:5px 8px;color:#fff;background:var(--main-deep)}
 .notice.gray{background:#6b7280}
 #lock-screen{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -126,6 +128,7 @@ table.matrix td:first-child{text-align:left;font-weight:600;font-size:11px;backg
   <button class="tab-btn" data-tab="matrix" onclick="switchTab('matrix',this)">重畳適用表</button>
 </div>
 <main id="main"></main>
+<footer class="site-footer" id="site-footer"><a href="admin.html">🛠 管理者ページ</a></footer>
 </div>
 
 <script src="config.js"></script>
@@ -397,6 +400,7 @@ if(PREVIEW){
     if(!m.scroll) window.scrollTo(0,y);
   });
   document.getElementById('lock-screen').style.display='none';
+  document.getElementById('site-footer').style.display='none'; // プレビュー内では管理者リンクを出さない
   if(window.parent!==window) window.parent.postMessage({type:'preview-ready'},location.origin);
 }else{
   // セッションに取得済みデータがあれば自動ログインし、裏で最新データに更新（全関数定義後に実行）
