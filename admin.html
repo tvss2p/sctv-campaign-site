@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>管理画面｜キャンペーン確認サイト</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+:root{--bg:#f4f5f7;--card:#fff;--line:#e3e6eb;--line2:#eef0f3;--text:#1f2430;--muted:#7a8190;--primary:#ef6244;--primary-d:#d84d30;--blue:#2f6fed;--green:#1e9e62;--red:#d64040;--yellow:#fff6d9;--radius:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--text);font-size:14px;min-height:100vh}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+
+/* ログイン */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
+.login-box{background:var(--card);border-radius:20px;padding:32px 24px;width:100%;max-width:340px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+.login-box .big{font-size:44px}
+.login-box h1{font-size:18px;margin:10px 0 4px}
+.login-box p{font-size:12px;color:var(--muted);margin-bottom:20px}
+.login-box input{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:14px;font-size:24px;font-weight:700;text-align:center;letter-spacing:8px;outline:none}
+.login-box input:focus{border-color:var(--primary)}
+.login-box button{width:100%;margin-top:12px}
+.login-err{color:var(--red);font-size:12px;margin-top:10px;min-height:18px;line-height:1.6;text-align:left}
+
+/* 共通部品 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;font-weight:700;font-size:13px;white-space:nowrap;transition:background .15s,border-color .15s}
+.btn:hover{border-color:#c9ced6}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-d)}
+.btn.primary:disabled{opacity:.5;cursor:default}
+.btn.danger{color:var(--red);border-color:#f2c9c9}
+.btn.small{padding:5px 10px;font-size:12px;border-radius:8px}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.lg{padding:13px 18px;font-size:15px;border-radius:12px}
+.icon-btn{width:30px;height:30px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:13px;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-btn:hover{color:var(--text);border-color:#c9ced6}
+.icon-btn.del:hover{color:var(--red);border-color:#f2c9c9}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--line2);color:var(--muted);white-space:nowrap}
+.chip.limited{background:#e6efff;color:#2f6fed}.chip.closed{background:#fde8e8;color:#d64040}.chip.always{background:#e2f5ec;color:#1e9e62}.chip.trial{background:#fff0e3;color:#d9731f}
+.st{font-size:11px;font-weight:700;white-space:nowrap}
+.st.live{color:var(--green)}.st.soon{color:#2f6fed}.st.end{color:var(--muted)}.st.off{color:#b0712a}
+.st::before{content:'●';margin-right:3px;font-size:9px;vertical-align:1px}
+
+/* 上部バー */
+.top{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line)}
+.top-row{display:flex;align-items:center;gap:10px;padding:10px 16px}
+.brand{font-weight:900;font-size:15px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.brand small{font-weight:500;color:var(--muted);font-size:11px}
+.save-state{margin-left:auto;font-size:12px;font-weight:700;color:var(--green);white-space:nowrap}
+.save-state.dirty{color:var(--primary)}
+.tabs{display:flex;gap:4px;padding:0 12px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:none;background:none;padding:10px 12px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+.tab.on{color:var(--text);border-bottom-color:var(--primary)}
+@media (max-width:560px){
+  .top-row{padding:8px 12px;gap:8px}
+  .brand small,.long{display:none}
+  .save-state{font-size:11px}
+  #saveBtn{padding:8px 12px}
+}
+
+/* レイアウト */
+.layout{display:flex;align-items:flex-start;gap:20px;padding:16px;max-width:1400px;margin:0 auto}
+#view{flex:1;min-width:0;max-width:760px;padding-bottom:80px}
+#pvPane{width:400px;flex-shrink:0;position:sticky;top:110px;height:calc(100vh - 126px);display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.pv-bar{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12px;font-weight:700;flex-wrap:wrap}
+.pv-bar label{display:flex;align-items:center;gap:4px;font-weight:500;color:var(--muted);margin-left:auto}
+.pv-bar input{border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:12px}
+#pv{flex:1;border:0;width:100%;background:#fff}
+.pv-close{display:none}
+.fab{display:none}
+@media (max-width:1000px){
+  .layout{display:block;padding:12px}
+  #view{max-width:none}
+  #pvPane{display:none;position:fixed;inset:0;width:auto;height:auto;top:0;border-radius:0;z-index:200;border:0}
+  #pvPane.open{display:flex}
+  .pv-close{display:inline-flex}
+  .fab{display:inline-flex;position:fixed;right:16px;bottom:16px;z-index:60;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+}
+
+/* パネル・フォーム */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.panel h3{font-size:14px;font-weight:900;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.panel .desc{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6}
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+.field > label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}
+.field .hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+.inp{width:100%;border:1.5px solid var(--line);border-radius:9px;padding:9px 11px;background:#fff;outline:none;transition:border-color .15s;line-height:1.5}
+.inp:focus{border-color:var(--primary)}
+textarea.inp{resize:vertical;min-height:40px;overflow:hidden}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:none;background:#fff;padding:7px 12px;font-weight:700;font-size:12px;color:var(--muted);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--text);color:#fff}
+.seg.ok3 button.on.ok{background:var(--green)}
+.seg.ok3 button.on.ng{background:var(--red)}
+.seg.ok3 button.on.none{background:#9aa1ad}
+.switch{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;font-weight:700;font-size:13px}
+.switch .knob{width:42px;height:24px;border-radius:12px;background:#cfd4dc;position:relative;transition:background .15s;flex-shrink:0}
+.switch .knob::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.switch.on .knob{background:var(--green)}
+.switch.on .knob::after{left:21px}
+.emoji-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.emoji-row button{width:34px;height:34px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:17px}
+.emoji-row button.on{border-color:var(--primary);background:#fff1ec}
+.icon-inp{display:flex;gap:8px;align-items:center}
+.icon-inp .inp{width:70px;text-align:center;font-size:20px;padding:5px}
+.note-box{background:var(--yellow);border:1px solid #f1df9e;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.6;margin-bottom:14px}
+.note-box.info{background:#eef4ff;border-color:#cddcfb}
+.status-line{font-size:12px;font-weight:700;padding:8px 10px;border-radius:8px;background:var(--line2);margin-top:10px}
+.status-line.live{background:#e2f5ec;color:var(--green)}
+.status-line.soon{background:#e6efff;color:#2f6fed}
+.status-line.end,.status-line.off{background:#f3eee7;color:#9a6a2f}
+
+/* キャンペーン一覧 */
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.toolbar .grow{flex:1}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;color:var(--muted)}
+.filters button.on{background:var(--text);border-color:var(--text);color:#fff}
+.clist{display:flex;flex-direction:column;gap:8px}
+.crow{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.crow:hover{border-color:#c9ced6;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.crow .ci{font-size:22px;width:40px;height:40px;border-radius:10px;background:var(--line2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.crow .cm{flex:1;min-width:0}
+.crow .cn{font-weight:700;line-height:1.4;overflow:hidden;text-overflow:ellipsis}
+.crow .cmeta{display:flex;gap:8px;align-items:center;margin-top:3px;flex-wrap:wrap}
+.crow .cord{display:flex;flex-direction:column;gap:3px}
+.crow .cord .icon-btn{width:26px;height:22px;font-size:10px}
+.crow.dim{opacity:.6}
+.empty{padding:30px;text-align:center;color:var(--muted);font-size:13px}
+
+/* エディタ */
+.ed-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.ed-head .title{font-size:17px;font-weight:900;flex:1;min-width:0;display:flex;align-items:center;gap:8px}
+.det-group{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.det-group-h{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--line2);font-size:12px;font-weight:900}
+.det-group-h .mark{width:20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
+.det-group-h .cnt{color:var(--muted);font-weight:500}
+.det-group-h .btn{margin-left:auto}
+.det-list{padding:6px}
+.det{display:flex;gap:6px;align-items:flex-start;padding:4px}
+.det textarea{flex:1;min-width:0}
+.det select{border:1.5px solid var(--line);border-radius:8px;padding:7px 4px;font-size:11px;background:#fff;width:74px;flex-shrink:0}
+.det .ops{display:flex;gap:3px;flex-shrink:0;padding-top:4px}
+.det-empty{font-size:12px;color:var(--muted);padding:6px 8px}
+.combo-list{display:flex;flex-direction:column;gap:6px}
+.combo-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border:1px solid var(--line2);border-radius:10px}
+.combo-item .nm{flex:1;min-width:0;font-size:13px;font-weight:500;line-height:1.4}
+.combo-item .nm small{display:block;font-size:10px;color:var(--muted);font-weight:400}
+@media (max-width:560px){.combo-item{flex-direction:column;align-items:stretch}.combo-item .seg{align-self:flex-start}}
+.chk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+.chk input{width:16px;height:16px}
+
+/* 重畳表エディタ */
+.mx-wrap{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px;background:#fff}
+table.mx{border-collapse:separate;border-spacing:0;font-size:12px}
+table.mx th,table.mx td{border-right:1px solid var(--line2);border-bottom:1px solid var(--line2);padding:6px;text-align:center;white-space:nowrap}
+table.mx thead th{position:sticky;top:0;background:#f8f9fb;z-index:2;font-size:11px;font-weight:700;color:var(--muted);vertical-align:bottom;min-width:64px;white-space:normal;line-height:1.3}
+table.mx th.rh,table.mx td.rh{position:sticky;left:0;background:#f8f9fb;text-align:left;z-index:1;font-weight:700;max-width:200px;white-space:normal;line-height:1.35;min-width:150px}
+table.mx thead th.rh{z-index:3}
+table.mx td.cell{cursor:pointer;font-size:15px;min-width:52px;user-select:none}
+table.mx td.cell:hover{background:#fff4ef}
+table.mx td.self{background:#f3f4f6;color:#c3c7cf}
+table.mx td.ok{background:#eaf7f0}
+table.mx td.ng{background:#fdeeee}
+.legend{font-size:12px;color:var(--muted);line-height:1.8;margin-top:10px}
+
+/* デザイン */
+.theme-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.theme-head .inp{flex:1;min-width:160px;font-weight:700}
+.badge-now{background:var(--green);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:12px}
+.cf{display:flex;align-items:center;gap:8px;border:1px solid var(--line2);border-radius:10px;padding:6px 8px}
+.cf input[type=color]{width:36px;height:30px;border:1px solid var(--line);border-radius:6px;padding:0;background:#fff;flex-shrink:0;cursor:pointer}
+.cf .lb{flex:1;font-size:12px;line-height:1.35;min-width:0}
+.cf .hex{width:78px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-size:12px;font-family:monospace}
+.swatch{display:flex;height:26px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.swatch span{flex:1}
+.preset-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.preset-row select{border:1.5px solid var(--line);border-radius:9px;padding:7px 8px;background:#fff;font-size:12px}
+
+/* 履歴 */
+.hist{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;margin-bottom:6px}
+.hist .t{flex:1;font-weight:700;font-variant-numeric:tabular-nums}
+.hist .tag{font-size:11px;color:var(--muted);font-weight:500;margin-left:6px}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#1f2430;color:#fff;padding:11px 18px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:all .25s;z-index:300;max-width:calc(100% - 32px);text-align:center;line-height:1.5}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{background:var(--red)}
+.loading{padding:40px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="login-box">
+    <div class="big">🛠</div>
+    <h1>管理画面</h1>
+    <p>キャンペーン確認サイトの内容を編集します</p>
+    <input id="pw" type="password" maxlength="20" placeholder="----" autocomplete="current-password">
+    <button class="btn primary lg" id="loginBtn">ログイン</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <div class="top">
+    <div class="top-row">
+      <div class="brand">🛠 管理画面 <small>キャンペーン確認サイト</small></div>
+      <div class="save-state" id="saveState">✓ 保存済み</div>
+      <button class="btn primary" id="saveBtn" data-act="save">💾 保存<span class="long">して反映</span></button>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab on" data-act="tab" data-tab="campaigns">📋 キャンペーン</button>
+      <button class="tab" data-act="tab" data-tab="matrix">🔀 重畳適用表</button>
+      <button class="tab" data-act="tab" data-tab="design">🎨 デザイン（色）</button>
+      <button class="tab" data-act="tab" data-tab="settings">⚙️ サイト設定</button>
+      <button class="tab" data-act="tab" data-tab="history">🕘 保存履歴</button>
+    </nav>
+  </div>
+  <div class="layout">
+    <div id="view"></div>
+    <aside id="pvPane">
+      <div class="pv-bar">
+        <span>👁 プレビュー</span>
+        <label>表示日 <input type="date" id="pvDate"></label>
+        <button class="btn small pv-close" data-act="pv-close">✕ 閉じる</button>
+      </div>
+      <iframe id="pv" title="プレビュー"></iframe>
+    </aside>
+  </div>
+  <button class="btn primary lg fab" data-act="pv-open">👁 プレビュー</button>
+  <div id="toast"></div>
+</div>
+
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<script>
+var S={
+  pw:null, data:null, updatedAt:'', dirty:false,
+  tab:'campaigns', editId:null, listFilter:'all',
+  showEnded:false, sym:false, previewDate:'', forceTheme:null,
+  history:null, pvReady:false, focus:null
+};
+var ICONS=['📺','🌐','📹','🎁','🔥','⚙️','👥','🏠','🎓','🏥','💰','📱','🎉','⭐','📣','🏷️','💡','🎫','🆕','🍀'];
+var MATRIX_OPTS=[
+  {v:'both',t:'表に出す（行・列とも）'},
+  {v:'row', t:'行だけに出す（このキャンペーンから見た可否のみ）'},
+  {v:'col', t:'列だけに出す（相手としてのみ）'},
+  {v:'none',t:'重畳適用表には出さない'}
+];
+var DTYPES=[
+  {v:'ok',  mark:'✓', color:'#1e9e62', title:'対象になる条件', short:'✓ 対象'},
+  {v:'ng',  mark:'✗', color:'#d64040', title:'対象外になる条件', short:'✗ 対象外'},
+  {v:'note',mark:'・',color:'#2f6fed', title:'注意事項', short:'・ 注意'}
+];
+
+function $(id){return document.getElementById(id);}
+function today(){return S.previewDate||ymd(new Date());}
+function catLabel(k){for(var i=0;i<CATEGORIES.length;i++)if(CATEGORIES[i].key===k)return CATEGORIES[i].label;return k;}
+function cur(){return S.editId?findCampaign(S.data,S.editId):null;}
+
+function md(s){
+  if(!s) return '';
+  var p=s.split('-'), y=String(new Date().getFullYear());
+  return (p[0]!==y?p[0]+'/':'')+Number(p[1])+'/'+Number(p[2]);
+}
+function statusOf(c){
+  var t=today();
+  if(c.hidden) return {k:'off',t:'非公開'};
+  if(c.start&&t<c.start) return {k:'soon',t:md(c.start)+'から表示'};
+  if(c.end&&t>c.end) return {k:'end',t:'終了（'+md(c.end)+'まで）'};
+  return {k:'live',t:c.end?'表示中・'+md(c.end)+'まで':'表示中（期限なし）'};
+}
+
+function toast(msg,err){
+  var t=$('toast');
+  t.textContent=msg;
+  t.className='show'+(err?' err':'');
+  clearTimeout(toast.tm);
+  toast.tm=setTimeout(function(){t.className=err?'err':'';},err?5000:2600);
+}
+
+function markDirty(){
+  S.dirty=true;
+  updateSaveState();
+  schedulePreview();
+}
+function updateSaveState(){
+  var el=$('saveState');
+  if(S.dirty){el.innerHTML='● 未保存<span class="long">の変更があります</span>';el.className='save-state dirty';}
+  else{el.textContent='✓ 保存済み';el.className='save-state';}
+}
+
+// ================================================================ ログイン
+
+async function login(pw,silent){
+  var err=$('loginErr');
+  if(!apiReady()){
+    err.innerHTML='まだスプレッドシートとつながっていません。<br>config.js に Apps Script の URL を設定してください（手順：ADMIN_SETUP.md）。';
+    return;
+  }
+  $('loginBtn').disabled=true; $('loginBtn').textContent='確認中…'; err.textContent='';
+  try{
+    var res=await apiCall('adminGet',{pass:pw});
+    if(!res.ok){
+      if(res.error==='auth'){err.textContent='パスワードが違います';sessionStorage.removeItem('adminPw');}
+      else err.textContent='エラー：'+(res.message||res.error);
+      return;
+    }
+    S.pw=pw;
+    sessionStorage.setItem('adminPw',pw);
+    S.updatedAt=res.updatedAt||'';
+    $('login').hidden=true; $('app').hidden=false;
+    $('pv').src='index.html?preview=1';
+    if(res.data&&res.data.campaigns&&res.data.campaigns.length){
+      S.data=upgradeData(res.data);
+      render();
+    }else{
+      $('view').innerHTML='<div class="loading">スプレッドシートが空のため、今のサイトの内容を取り込んでいます…</div>';
+      await importFromSite();
+    }
+  }catch(e){
+    if(!silent) err.textContent='通信できませんでした。電波やURLを確認してください（'+e.message+'）';
+  }finally{
+    $('loginBtn').disabled=false; $('loginBtn').textContent='ログイン';
+  }
+}
+
+// 初回：index.html に内蔵されている暗号化データを読み込んで、編集のスタート地点にする
+async function importFromSite(){
+  try{
+    var html=await fetch('index.html',{cache:'no-store'}).then(function(r){return r.text();});
+    var m=html.match(/var BLOB='([^']+)'/);
+    var json=await decryptBlob(m[1],S.pw);
+    S.data=upgradeData(JSON.parse(json));
+    S.dirty=true;
+    render();
+    updateSaveState();
+    toast('今のサイトの内容を取り込みました。右上の「保存して反映」でスプレッドシートに書き込まれます');
+  }catch(e){
+    S.data=upgradeData({version:2,campaigns:[],others:[]});
+    render();
+    toast('今のサイトの内容を読み込めませんでした。空の状態から作成できます',true);
+  }
+}
+
+// ================================================================ 保存
+
+function validate(){
+  var errs=[], seen={};
+  S.data.campaigns.forEach(function(c){
+    var nm='「'+(c.name||c.id)+'」';
+    if(seen[c.id]) errs.push('ID「'+c.id+'」が重複しています');
+    seen[c.id]=1;
+    if(!c.name.trim()) errs.push('キャンペーン名が空のものがあります（ID: '+c.id+'）');
+    if(c.start&&c.end&&c.start>c.end) errs.push(nm+'：開始日が終了日より後になっています');
+    if(c.aipo&&!/^https?:\/\//.test(c.aipo)) errs.push(nm+'：Aipo の URL は http から始まる形で入力してください');
+  });
+  S.data.themes.forEach(function(t,i){
+    if(!t.name.trim()) errs.push('名前が空のテーマがあります（'+(i+1)+'番目）');
+    THEME_KEYS.forEach(function(k){ if(!isHex(t.colors[k.key])) errs.push('テーマ「'+t.name+'」の「'+k.label+'」の色が正しくありません'); });
+  });
+  if(!S.data.themes.length) errs.push('テーマが1つもありません');
+  return errs;
+}
+
+async function save(force){
+  var errs=validate();
+  if(errs.length){alert('保存できません。次の点を直してください：\n\n・'+errs.join('\n・'));return;}
+  var btn=$('saveBtn');
+  btn.disabled=true; btn.textContent='保存中…';
+  try{
+    var res=await apiCall('save',{pass:S.pw,data:S.data,baseUpdatedAt:S.updatedAt,force:!!force},60000);
+    if(res.ok){
+      S.updatedAt=res.updatedAt; S.data.updatedAt=res.updatedAt;
+      S.dirty=false; S.history=null;
+      updateSaveState();
+      toast('✓ 保存しました。サイトに反映されています');
+      if(S.tab==='history') render();
+    }else if(res.error==='conflict'){
+      if(confirm('ほかの人（またはスプレッドシート上）で内容が更新されています。\n\n［OK］いま編集中の内容で上書き保存する\n［キャンセル］保存しない（ページを再読み込みすると最新の内容を確認できます）')){
+        btn.disabled=false; btn.innerHTML='💾 保存<span class="long">して反映</span>';
+        return save(true);
+      }
+    }else if(res.error==='auth'){
+      toast('パスワードが変更されたようです。再読み込みしてログインし直してください',true);
+    }else if(res.error==='busy'){
+      toast('ほかの保存処理中です。少し待ってからもう一度押してください',true);
+    }else{
+      toast('保存できませんでした：'+(res.message||res.error),true);
+    }
+  }catch(e){
+    toast('通信エラーで保存できませんでした。もう一度お試しください',true);
+  }finally{
+    btn.disabled=false; btn.innerHTML='💾 保存<span class="long">して反映</span>';
+  }
+}
+
+// ================================================================ プレビュー
+
+function schedulePreview(scroll){
+  clearTimeout(schedulePreview.tm);
+  schedulePreview.tm=setTimeout(function(){sendPreview(scroll);},250);
+}
+function sendPreview(scroll){
+  if(!S.pvReady||!S.data) return;
+  var th=S.forceTheme!=null&&S.data.themes[S.forceTheme]?S.data.themes[S.forceTheme].colors:null;
+  $('pv').contentWindow.postMessage({type:'preview',data:S.data,date:S.previewDate||null,focus:S.editId,scroll:!!scroll,theme:th},location.origin);
+}
+window.addEventListener('message',function(ev){
+  if(ev.origin!==location.origin) return;
+  if(ev.data&&ev.data.type==='preview-ready'){S.pvReady=true;sendPreview(true);}
+});
+
+// ================================================================ 画面描画
+
+function render(){
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.toggle('on',b.dataset.tab===S.tab);});
+  var v=$('view');
+  if(S.tab==='campaigns') v.innerHTML=S.editId&&cur()?viewEditor():viewList();
+  else if(S.tab==='matrix') v.innerHTML=viewMatrix();
+  else if(S.tab==='design') v.innerHTML=viewDesign();
+  else if(S.tab==='settings') v.innerHTML=viewSettings();
+  else if(S.tab==='history'){v.innerHTML=viewHistory(); if(!S.history) loadHistory();}
+  autosizeAll();
+  if(S.focus){var el=document.querySelector(S.focus); if(el){el.focus();} S.focus=null;}
+}
+
+function autosize(t){t.style.height='auto';t.style.height=(t.scrollHeight+3)+'px';}
+function autosizeAll(){document.querySelectorAll('textarea.inp').forEach(autosize);}
+
+function field(label,inner,hint){
+  return '<div class="field"><label>'+label+'</label>'+inner+(hint?'<div class="hint">'+hint+'</div>':'')+'</div>';
+}
+function inp(attr,val,ph,type){
+  return '<input class="inp" type="'+(type||'text')+'" '+attr+' value="'+esc(val)+'" placeholder="'+esc(ph||'')+'">';
+}
+function ta(attr,val,ph){
+  return '<textarea class="inp" rows="1" '+attr+' placeholder="'+esc(ph||'')+'">'+esc(val)+'</textarea>';
+}
+
+// ---------- キャンペーン一覧 ----------
+function viewList(){
+  var f=S.listFilter;
+  var filters=[['all','すべて'],['live','表示中'],['soon','表示予定'],['past','終了・非公開']];
+  var list=S.data.campaigns.filter(function(c){
+    var k=statusOf(c).k;
+    return f==='all'||(f==='live'&&k==='live')||(f==='soon'&&k==='soon')||(f==='past'&&(k==='end'||k==='off'));
+  });
+  var h='<div class="note-box info">✏️ キャンペーンをタップすると編集できます。並び順は ▲▼ で変更（サイトの表示順になります）。<br>編集したら右上の<b>「保存して反映」</b>を押すと、全員の端末に反映されます。</div>';
+  h+='<div class="toolbar"><div class="filters">'+filters.map(function(x){
+    return '<button data-act="filter" data-v="'+x[0]+'" class="'+(f===x[0]?'on':'')+'">'+x[1]+'</button>';
+  }).join('')+'</div><div class="grow"></div><button class="btn primary" data-act="add">＋ 新しいキャンペーン</button></div>';
+  if(!list.length) h+='<div class="empty">該当するキャンペーンはありません</div>';
+  h+='<div class="clist">'+list.map(function(c){
+    var st=statusOf(c);
+    return '<div class="crow'+(st.k==='end'||st.k==='off'?' dim':'')+'" data-act="edit" data-id="'+esc(c.id)+'">'
+      +'<div class="ci">'+esc(c.icon||'・')+'</div>'
+      +'<div class="cm"><div class="cn">'+esc(c.name||'（名前なし）')+'</div>'
+      +'<div class="cmeta"><span class="chip '+esc(c.category)+'">'+esc(catLabel(c.category))+'</span><span class="st '+st.k+'">'+esc(st.t)+'</span></div></div>'
+      +'<div class="cord"><button class="icon-btn" data-act="move" data-id="'+esc(c.id)+'" data-d="-1" title="上へ">▲</button>'
+      +'<button class="icon-btn" data-act="move" data-id="'+esc(c.id)+'" data-d="1" title="下へ">▼</button></div>'
+      +'</div>';
+  }).join('')+'</div>';
+  return h;
+}
+
+// ---------- キャンペーン編集 ----------
+function viewEditor(){
+  var c=cur();
+  var st=statusOf(c);
+  var h='<div class="ed-head"><button class="btn" data-act="back">← 一覧に戻る</button>'
+    +'<div class="title"><span>'+esc(c.icon)+'</span><span>'+esc(c.name||'（名前なし）')+'</span></div></div>';
+
+  // 公開・期間
+  h+='<div class="panel"><h3>📅 表示する期間</h3><div class="desc">期間外になると自動でサイトから消えます（開始日になると自動で表示）。空欄は「無期限」。</div>'
+    +'<div class="grid2">'
+    +field('開始日',inp('data-f="start"',c.start,'','date'),'空欄＝すでに開始している')
+    +field('終了日',inp('data-f="end"',c.end,'','date'),'空欄＝終了日未定（ずっと表示）')
+    +'</div>'
+    +'<div class="field" style="margin-top:6px"><div class="switch'+(c.hidden?'':' on')+'" data-act="toggle-hidden"><span class="knob"></span><span>'+(c.hidden?'非公開（サイトに出さない）':'公開する（期間中はサイトに表示）')+'</span></div>'
+    +'<div class="hint">準備中のキャンペーンは「非公開」にしておけば、保存してもサイトには出ません。</div></div>'
+    +'<div class="status-line '+st.k+'" id="edStatus">'+statusText(c)+'</div>'
+    +'</div>';
+
+  // 基本情報
+  h+='<div class="panel"><h3>📝 基本情報</h3>'
+    +field('キャンペーン名',inp('data-f="name"',c.name,'例：新規テレビ加入工事費割引キャンペーン'))
+    +field('分類（どの見出しの下に出すか）','<div class="seg">'+CATEGORIES.map(function(x){
+        return '<button data-act="cat" data-v="'+x.key+'" class="'+(c.category===x.key?'on':'')+'">'+x.label+'</button>';
+      }).join('')+'</div>')
+    +'<div class="grid2">'
+    +field('ラベル（カード左上の小さな文字）',inp('data-f="status"',c.status,'例：期間限定 / SNS限定'))
+    +field('短い名前（重畳表・重畳リスト用）',inp('data-f="label"',c.label,'例：新規TV工事費割引'))
+    +'</div>'
+    +field('アイコン','<div class="icon-inp">'+inp('data-f="icon"',c.icon,'')+'<span class="hint">絵文字を1つ。下から選ぶか、直接入力</span></div>'
+      +'<div class="emoji-row">'+ICONS.map(function(e){return '<button data-act="icon" data-v="'+e+'" class="'+(c.icon===e?'on':'')+'">'+e+'</button>';}).join('')+'</div>')
+    +'</div>';
+
+  // カード表示
+  h+='<div class="panel"><h3>🪧 カードに出す文字</h3><div class="desc">閉じた状態のカードに見える部分です。</div>'
+    +field('サブタイトル（名前の下の小さい文字）',inp('data-f="subtitle"',c.subtitle,'例：～ 2026年10月31日'))
+    +field('期間（オレンジの帯に出す文言）',inp('data-f="period"',c.period,'例：2026/7/1 ～ 10/31'),'空欄なら帯は出ません。上の「表示する期間」とは別の、見せるための文言です。')
+    +'</div>';
+
+  // 目玉
+  h+='<div class="panel"><h3>💰 特典の目玉</h3><div class="desc">カードを開いたとき一番上に出る囲み部分です。</div>'
+    +field('説明',ta('data-f="highlight"',c.highlight,'例：期間中にTVサービス新規申込で加入工事費を割引'))
+    +'<div class="grid2">'
+    +field('通常価格（取り消し線で表示）',inp('data-f="price_old"',c.price_old,'例：29,700円'))
+    +field('特典価格（大きく表示）',inp('data-f="price_new"',c.price_new,'例：11,000円'))
+    +'</div>'
+    +'<div class="field"><div class="switch'+(c.kojihi?' on':'')+'" data-act="toggle-kojihi"><span class="knob"></span><span>工事費の分割表示（24ヶ月）を使う</span></div></div>'
+    +(c.kojihi?'<div class="grid3 grid2">'
+      +field('タイトル',inp('data-f="kojihi.title"',c.kojihi.title,'例：新規特約'))
+      +field('工事費総額（円）',inp('data-f="kojihi.total"',c.kojihi.total,'例：24,000'))
+      +field('毎月の値引き（円/月）',inp('data-f="kojihi.monthly"',c.kojihi.monthly,'例：-1,000'))
+      +'</div>':'')
+    +'</div>';
+
+  // 条件・注意事項
+  var dets=S.data.details[c.id]||[];
+  h+='<div class="panel"><h3>✅ 対象者・注意事項</h3><div class="desc">1行に1項目。<b>**囲む**</b>と太字で強調、<b>!!囲む!!</b>と赤字になります。</div>';
+  DTYPES.forEach(function(t){
+    var items=[];
+    dets.forEach(function(d,i){if(d.type===t.v)items.push(i);});
+    h+='<div class="det-group"><div class="det-group-h"><span class="mark" style="background:'+t.color+'">'+t.mark+'</span>'+t.title+' <span class="cnt">'+items.length+'件</span>'
+      +'<button class="btn small" data-act="det-add" data-v="'+t.v+'">＋ 追加</button></div><div class="det-list">';
+    if(!items.length) h+='<div class="det-empty">なし</div>';
+    items.forEach(function(i){
+      h+='<div class="det">'
+        +'<select data-dtype="'+i+'" title="種類を変更">'+DTYPES.map(function(x){return '<option value="'+x.v+'"'+(x.v===t.v?' selected':'')+'>'+x.short+'</option>';}).join('')+'</select>'
+        +ta('data-dt="'+i+'"',dets[i].text,'内容を入力')
+        +'<div class="ops"><button class="icon-btn" data-act="det-move" data-i="'+i+'" data-d="-1" title="上へ">↑</button>'
+        +'<button class="icon-btn" data-act="det-move" data-i="'+i+'" data-d="1" title="下へ">↓</button>'
+        +'<button class="icon-btn del" data-act="det-del" data-i="'+i+'" title="削除">✕</button></div>'
+        +'</div>';
+    });
+    h+='</div></div>';
+  });
+  h+='</div>';
+
+  // 重畳適用
+  var combos=S.data.combos[c.id]||[];
+  var rOf=function(to){for(var i=0;i<combos.length;i++)if(combos[i].to===to)return combos[i].r;return 'none';};
+  var targets=S.data.campaigns.filter(function(x){
+    if(x.id===c.id) return false;
+    var k=statusOf(x).k;
+    return S.showEnded||(k!=='end'&&k!=='off')||rOf(x.id)!=='none';
+  }).map(function(x){return {id:x.id,name:x.label||x.name,sub:statusOf(x).t};})
+    .concat(S.data.others.map(function(o){return {id:o.id,name:o.name,sub:'キャンペーン以外'};}));
+  h+='<div class="panel"><h3>🔀 重畳適用（このカードに出す併用可否）</h3>'
+    +'<div class="desc">「—」にすると、このカードには表示しません。終了したキャンペーンは自動でカードから消えます。</div>'
+    +'<div class="toolbar"><label class="chk"><input type="checkbox" data-act="sym"'+(S.sym?' checked':'')+'> 相手側のカードにも同じ設定を反映する</label>'
+    +'<label class="chk"><input type="checkbox" data-act="show-ended"'+(S.showEnded?' checked':'')+'> 終了・非公開のキャンペーンも表示</label></div>'
+    +'<div class="combo-list">'+targets.map(function(t){
+      var r=rOf(t.id);
+      return '<div class="combo-item"><div class="nm">'+esc(t.name)+'<small>'+esc(t.sub)+'</small></div>'
+        +'<div class="seg ok3">'
+        +'<button data-act="combo" data-to="'+esc(t.id)+'" data-r="ok" class="ok'+(r==='ok'?' on':'')+'">✅ 可</button>'
+        +'<button data-act="combo" data-to="'+esc(t.id)+'" data-r="ng" class="ng'+(r==='ng'?' on':'')+'">❌ 不可</button>'
+        +'<button data-act="combo" data-to="'+esc(t.id)+'" data-r="none" class="none'+(r==='none'?' on':'')+'">— なし</button>'
+        +'</div></div>';
+    }).join('')+'</div>'
+    +'<div class="field" style="margin-top:14px"><label>「重畳適用表」タブでの扱い</label><select class="inp" data-f="matrix">'
+    +MATRIX_OPTS.map(function(o){return '<option value="'+o.v+'"'+(c.matrix===o.v?' selected':'')+'>'+o.t+'</option>';}).join('')
+    +'</select><div class="hint">例：お友だち紹介のように「原則どれとも併用可」のものは「出さない」にすると表がすっきりします。</div></div>'
+    +'</div>';
+
+  // リンク
+  h+='<div class="panel"><h3>🔗 Aipo 社内告知</h3>'
+    +field('URL',inp('data-f="aipo"',c.aipo,'https://app.aipo.com/apps/bbs/topics/…','url'),'空欄ならリンクボタンは出ません。')
+    +'</div>';
+
+  h+='<div class="panel"><h3>🧰 その他</h3><div class="toolbar">'
+    +'<button class="btn" data-act="dup">📄 このキャンペーンを複製</button>'
+    +'<div class="grow"></div><button class="btn danger" data-act="del">🗑 削除</button></div>'
+    +'<div class="hint" style="font-size:11px;color:var(--muted)">ID：'+esc(c.id)+'（自動で付きます）。終わったキャンペーンは削除せず、終了日を入れておけば自動で消えます。</div></div>';
+  return h;
+}
+
+function statusText(c){
+  var st=statusOf(c), t=md(today());
+  if(st.k==='off') return '🔒 非公開のため、サイトには表示されません';
+  if(st.k==='soon') return '⏳ '+t+' 時点ではまだ表示されません（'+md(c.start)+' から自動で表示）';
+  if(st.k==='end') return '⏹ '+t+' 時点では終了しているため表示されません';
+  return '✅ '+t+' 時点でサイトに表示されています'+(c.end?'（'+md(c.end)+' の終わりに自動で非表示）':'');
+}
+
+// ---------- 重畳適用表 ----------
+function viewMatrix(){
+  var cs=S.data.campaigns.filter(function(c){var k=statusOf(c).k;return S.showEnded||(k!=='end'&&k!=='off');});
+  var cols=cs.map(function(c){return {id:c.id,name:c.label||c.name};}).concat(S.data.others.map(function(o){return {id:o.id,name:o.name};}));
+  var h='<div class="note-box info">マスをタップするたびに <b>—（なし）→ ✅ 可 → ❌ 不可</b> と切り替わります。<br>行（左）のキャンペーンのカードに、列（上）の相手との可否が表示されます。</div>'
+    +'<div class="toolbar"><label class="chk"><input type="checkbox" data-act="sym"'+(S.sym?' checked':'')+'> 反対側（列→行）にも同じ設定を反映する</label>'
+    +'<label class="chk"><input type="checkbox" data-act="show-ended"'+(S.showEnded?' checked':'')+'> 終了・非公開のキャンペーンも表示</label></div>';
+  if(!cs.length) return h+'<div class="empty">表示できるキャンペーンがありません</div>';
+  h+='<div class="mx-wrap"><table class="mx"><thead><tr><th class="rh">このカードに表示 ↓ ／ 相手 →</th>'
+    +cols.map(function(c){return '<th>'+esc(c.name)+'</th>';}).join('')+'</tr></thead><tbody>';
+  cs.forEach(function(r){
+    var combos=S.data.combos[r.id]||[];
+    h+='<tr><td class="rh">'+esc(r.icon)+' '+esc(r.label||r.name)+'</td>';
+    cols.forEach(function(c){
+      if(c.id===r.id){h+='<td class="self">／</td>';return;}
+      var v='none';
+      combos.forEach(function(x){if(x.to===c.id)v=x.r;});
+      h+='<td class="cell '+(v==='none'?'':v)+'" data-act="mx" data-r="'+esc(r.id)+'" data-c="'+esc(c.id)+'">'+(v==='ok'?'✅':v==='ng'?'❌':'<span style="color:#c3c7cf">—</span>')+'</td>';
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>'
+    +'<div class="legend">✅ 可　❌ 不可　— カードに表示しない<br>サイトの「重畳適用表」タブに出すかどうかは、各キャンペーンの編集画面で設定できます。</div>';
+  return h;
+}
+
+// ---------- デザイン ----------
+function viewDesign(){
+  var active=pickTheme(S.data.themes,new Date(today()+'T12:00:00')).index;
+  var h='<div class="note-box info">🎨 サイトの背景色・文字色などを変更できます。<br>'
+    +'「適用開始日」を入れておくと、その日から自動で切り替わります（例：7/1から夏テーマ）。空欄のテーマは常に有効で、開始日を迎えたテーマの中で<b>一番新しい日付のもの</b>が使われます。</div>';
+  if(S.forceTheme!=null&&S.data.themes[S.forceTheme]){
+    h+='<div class="note-box">👁 プレビューを「'+esc(S.data.themes[S.forceTheme].name)+'」で表示中 <button class="btn small" data-act="th-unforce">解除</button></div>';
+  }
+  S.data.themes.forEach(function(t,i){
+    h+='<div class="panel"><div class="theme-head">'
+      +'<input class="inp" data-tn="'+i+'" value="'+esc(t.name)+'" placeholder="テーマ名">'
+      +(i===active?'<span class="badge-now">'+md(today())+' 時点で使用中</span>':'')
+      +'</div>'
+      +'<div class="grid2">'
+      +field('適用開始日',inp('data-ts="'+i+'"',t.start,'','date'),'空欄＝いつでも（基本のテーマ）')
+      +field('色のイメージ','<div class="swatch">'+['headerFrom','bg','surface','main','text','ok','ng'].map(function(k){return '<span style="background:'+esc(t.colors[k])+'"></span>';}).join('')+'</div>')
+      +'</div>'
+      +'<div class="preset-row"><select data-preset="'+i+'"><option value="">🎨 プリセットの色を読み込む…</option>'
+      +THEME_PRESETS.map(function(p){return '<option value="'+p.id+'">'+esc(p.name)+'</option>';}).join('')+'</select>'
+      +'<button class="btn small" data-act="th-preview" data-i="'+i+'">👁 このテーマでプレビュー</button>'
+      +'<div style="flex:1"></div>'
+      +(S.data.themes.length>1?'<button class="btn small danger" data-act="th-del" data-i="'+i+'">削除</button>':'')
+      +'</div>'
+      +'<div class="colors">'+THEME_KEYS.map(function(k){
+        var v=t.colors[k.key];
+        return '<label class="cf"><input type="color" data-tc="'+i+'" data-ck="'+k.key+'" value="'+esc(v)+'">'
+          +'<span class="lb">'+esc(k.label)+'</span>'
+          +'<input class="hex" data-tc="'+i+'" data-ck="'+k.key+'" value="'+esc(v)+'" maxlength="7"></label>';
+      }).join('')+'</div></div>';
+  });
+  h+='<button class="btn primary" data-act="th-add">＋ テーマを追加（季節の切り替え予約など）</button>';
+  return h;
+}
+
+// ---------- サイト設定 ----------
+function viewSettings(){
+  var s=S.data.settings;
+  var h='<div class="panel"><h3>🏷 ヘッダー</h3>'
+    +field('サイト名',inp('data-s="title"',s.title,'キャンペーン確認サイト'))
+    +field('サブタイトル',inp('data-s="subtitle"',s.subtitle,'社内スタッフ向け｜2026年度版'))
+    +field('ヘッダーアイコン（絵文字）',inp('data-s="icon"',s.icon,'📋'))
+    +'</div>';
+  h+='<div class="panel"><h3>🔀 重畳適用表の注記</h3><div class="desc">表の下に出す補足です。1行ずつ表示されます。</div>'
+    +ta('data-s="matrixNotes"',s.matrixNotes,'')
+    +'</div>';
+  h+='<div class="panel"><h3>🤝 重畳の相手（キャンペーン以外）</h3><div class="desc">「取次店紹介」のように、キャンペーンではないけれど併用可否を出したいものを登録します。</div>';
+  S.data.others.forEach(function(o,i){
+    h+='<div class="det"><input class="inp" data-o="'+i+'" value="'+esc(o.name)+'" placeholder="名前">'
+      +'<div class="ops"><button class="icon-btn del" data-act="other-del" data-i="'+i+'" title="削除">✕</button></div></div>';
+  });
+  h+='<button class="btn small" data-act="other-add" style="margin-top:8px">＋ 追加</button></div>';
+  h+='<div class="panel"><h3>🔗 リンク</h3><div class="desc">サイト本体：<a href="index.html" target="_blank">index.html を開く</a><br>'
+    +'スプレッドシートを直接編集しても反映されます（反映まで最大5分。メニュー「🛠 キャンペーンサイト → すぐ反映」で即時）。</div></div>';
+  return h;
+}
+
+// ---------- 保存履歴 ----------
+function viewHistory(){
+  var h='<div class="note-box info">🕘 保存するたびに、その時点の内容が記録されます（最新50件）。<br>「この版を読み込む」で編集画面に戻し、内容を確認してから「保存して反映」を押すと元に戻せます。</div>';
+  if(!S.history) return h+'<div class="loading">読み込み中…</div>';
+  if(!S.history.length) return h+'<div class="empty">まだ履歴はありません</div>';
+  S.history.forEach(function(x,i){
+    h+='<div class="hist"><div class="t">'+esc(x.at)+(i===0?'<span class="tag">最新</span>':'')+'</div>'
+      +'<button class="btn small" data-act="hist-load" data-row="'+x.row+'">この版を読み込む</button></div>';
+  });
+  return h;
+}
+async function loadHistory(){
+  try{
+    var res=await apiCall('history',{pass:S.pw});
+    S.history=res.ok?res.items:[];
+  }catch(e){S.history=[];toast('履歴を読み込めませんでした',true);}
+  if(S.tab==='history') render();
+}
+
+// ================================================================ 操作
+
+function newId(){
+  var n=0;
+  S.data.campaigns.concat(S.data.others).forEach(function(c){var m=/^c(\d+)$/.exec(c.id);if(m)n=Math.max(n,+m[1]);});
+  return 'c'+(n+1);
+}
+function setCombo(rid,cid,r,noSym){
+  var list=(S.data.combos[rid]||[]).slice();
+  var idx=-1;
+  list.forEach(function(x,i){if(x.to===cid)idx=i;});
+  if(r==='none'){if(idx>=0)list.splice(idx,1);}
+  else if(idx>=0) list[idx]={to:cid,r:r};
+  else list.push({to:cid,r:r});
+  if(list.length) S.data.combos[rid]=list; else delete S.data.combos[rid];
+  if(S.sym&&!noSym&&findCampaign(S.data,cid)) setCombo(cid,rid,r,true);
+}
+function moveIn(arr,i,d){
+  var j=i+d;
+  if(j<0||j>=arr.length) return false;
+  var t=arr[i];arr[i]=arr[j];arr[j]=t;return true;
+}
+
+var ACTIONS={
+  'tab':function(el){
+    S.tab=el.dataset.tab;
+    if(S.tab!=='design') S.forceTheme=null;
+    render(); schedulePreview(); window.scrollTo(0,0);
+  },
+  'save':function(){save(false);},
+  'pv-open':function(){$('pvPane').classList.add('open');sendPreview(true);},
+  'pv-close':function(){$('pvPane').classList.remove('open');},
+  'filter':function(el){S.listFilter=el.dataset.v;render();},
+  'add':function(){
+    var id=newId();
+    S.data.campaigns.unshift({id:id,name:'新しいキャンペーン',label:'',category:'limited',status:'期間限定',icon:'🎉',subtitle:'',period:'',start:ymd(new Date()),end:'',highlight:'',price_old:'',price_new:'',aipo:'',hidden:true,matrix:'both',kojihi:null});
+    S.data.details[id]=[];
+    S.editId=id; S.focus='[data-f="name"]';
+    markDirty(); render(); window.scrollTo(0,0); schedulePreview(true);
+    toast('「非公開」の状態で追加しました。準備ができたら「公開する」をオンにしてください');
+  },
+  'edit':function(el){S.editId=el.dataset.id;render();window.scrollTo(0,0);schedulePreview(true);},
+  'move':function(el){
+    var i=S.data.campaigns.findIndex(function(c){return c.id===el.dataset.id;});
+    if(moveIn(S.data.campaigns,i,+el.dataset.d)){markDirty();render();}
+  },
+  'back':function(){S.editId=null;render();schedulePreview();},
+  'cat':function(el){
+    var c=cur(), old=catLabel(c.category);
+    if(!c.status||c.status===old) c.status=catLabel(el.dataset.v);
+    c.category=el.dataset.v; markDirty(); render();
+  },
+  'icon':function(el){cur().icon=el.dataset.v;markDirty();render();},
+  'toggle-hidden':function(){var c=cur();c.hidden=!c.hidden;markDirty();render();},
+  'toggle-kojihi':function(){var c=cur();c.kojihi=c.kojihi?null:{title:'',total:'',monthly:''};markDirty();render();},
+  'det-add':function(el){
+    var c=cur(), list=S.data.details[c.id]=S.data.details[c.id]||[];
+    list.push({type:el.dataset.v,text:''});
+    S.focus='[data-dt="'+(list.length-1)+'"]';
+    markDirty(); render();
+  },
+  'det-move':function(el){
+    var list=S.data.details[cur().id], i=+el.dataset.i, d=+el.dataset.d, type=list[i].type;
+    for(var j=i+d;j>=0&&j<list.length;j+=d){
+      if(list[j].type===type){var t=list[i];list[i]=list[j];list[j]=t;markDirty();render();return;}
+    }
+  },
+  'det-del':function(el){
+    var list=S.data.details[cur().id], i=+el.dataset.i;
+    if(list[i].text&&!confirm('この項目を削除しますか？\n\n'+list[i].text)) return;
+    list.splice(i,1); markDirty(); render();
+  },
+  'combo':function(el){setCombo(cur().id,el.dataset.to,el.dataset.r);markDirty();render();},
+  'mx':function(el){
+    var rid=el.dataset.r, cid=el.dataset.c, v='none';
+    (S.data.combos[rid]||[]).forEach(function(x){if(x.to===cid)v=x.r;});
+    setCombo(rid,cid,v==='none'?'ok':v==='ok'?'ng':'none');
+    markDirty(); render();
+  },
+  'dup':function(){
+    var c=cur(), id=newId();
+    var copy=JSON.parse(JSON.stringify(c));
+    copy.id=id; copy.name=c.name+'（コピー）'; copy.hidden=true;
+    S.data.campaigns.splice(S.data.campaigns.indexOf(c)+1,0,copy);
+    S.data.details[id]=JSON.parse(JSON.stringify(S.data.details[c.id]||[]));
+    if(S.data.combos[c.id]) S.data.combos[id]=JSON.parse(JSON.stringify(S.data.combos[c.id]));
+    S.editId=id; markDirty(); render(); window.scrollTo(0,0); schedulePreview(true);
+    toast('複製しました（非公開）。日付や内容を書き換えてください');
+  },
+  'del':function(){
+    var c=cur();
+    if(!confirm('「'+c.name+'」を削除しますか？\n\n終わったキャンペーンなら、削除せず終了日を入れておくだけでもサイトから消えます。\n（保存するまではサイトに影響しません）')) return;
+    S.data.campaigns.splice(S.data.campaigns.indexOf(c),1);
+    delete S.data.details[c.id]; delete S.data.combos[c.id];
+    Object.keys(S.data.combos).forEach(function(k){
+      S.data.combos[k]=S.data.combos[k].filter(function(x){return x.to!==c.id;});
+      if(!S.data.combos[k].length) delete S.data.combos[k];
+    });
+    S.editId=null; markDirty(); render();
+  },
+  'th-add':function(){
+    var base=S.data.themes[pickTheme(S.data.themes,new Date(today()+'T12:00:00')).index];
+    S.data.themes.push({name:'新しいテーマ',start:'',colors:Object.assign({},base?base.colors:presetColors('dark'))});
+    S.forceTheme=S.data.themes.length-1;
+    markDirty(); render(); window.scrollTo(0,document.body.scrollHeight);
+  },
+  'th-del':function(el){
+    var i=+el.dataset.i;
+    if(!confirm('テーマ「'+S.data.themes[i].name+'」を削除しますか？')) return;
+    S.data.themes.splice(i,1); S.forceTheme=null; markDirty(); render();
+  },
+  'th-preview':function(el){S.forceTheme=+el.dataset.i;render();sendPreview();if(innerWidth<=1000)$('pvPane').classList.add('open');},
+  'th-unforce':function(){S.forceTheme=null;render();sendPreview();},
+  'other-add':function(){
+    var n=1; while(S.data.others.some(function(o){return o.id==='x'+n;})||findCampaign(S.data,'x'+n)) n++;
+    S.data.others.push({id:'x'+n,name:''});
+    S.focus='[data-o="'+(S.data.others.length-1)+'"]';
+    markDirty(); render();
+  },
+  'other-del':function(el){
+    var i=+el.dataset.i, o=S.data.others[i];
+    if(!confirm('「'+(o.name||'（名前なし）')+'」を削除しますか？\n各キャンペーンの重畳設定からも外れます。')) return;
+    S.data.others.splice(i,1);
+    Object.keys(S.data.combos).forEach(function(k){
+      S.data.combos[k]=S.data.combos[k].filter(function(x){return x.to!==o.id;});
+      if(!S.data.combos[k].length) delete S.data.combos[k];
+    });
+    markDirty(); render();
+  },
+  'hist-load':async function(el){
+    if(S.dirty&&!confirm('未保存の変更は失われます。この版を読み込みますか？')) return;
+    try{
+      var res=await apiCall('historyGet',{pass:S.pw,row:+el.dataset.row});
+      if(!res.ok) throw new Error(res.message||res.error);
+      S.data=upgradeData(res.data); S.editId=null; S.tab='campaigns';
+      markDirty(); render(); schedulePreview(true);
+      toast('読み込みました。内容を確認して「保存して反映」を押すと、この版に戻ります');
+    }catch(e){toast('読み込めませんでした：'+e.message,true);}
+  }
+};
+
+document.addEventListener('click',function(ev){
+  var el=ev.target.closest('[data-act]');
+  if(!el||el.tagName==='INPUT') return;
+  var fn=ACTIONS[el.dataset.act];
+  if(fn){ev.preventDefault();fn(el,ev);}
+});
+
+document.addEventListener('change',function(ev){
+  var t=ev.target, d=t.dataset;
+  if(d.act==='sym'){S.sym=t.checked;return;}
+  if(d.act==='show-ended'){S.showEnded=t.checked;render();return;}
+  if(d.dtype!=null){S.data.details[cur().id][+d.dtype].type=t.value;markDirty();render();return;}
+  if(d.preset!=null&&t.value){
+    var th=S.data.themes[+d.preset];
+    if(!confirm('「'+th.name+'」の色を、プリセットの色で置き換えますか？')){t.value='';return;}
+    th.colors=presetColors(t.value);
+    S.forceTheme=+d.preset; markDirty(); render(); return;
+  }
+  if(d.f==='matrix'){cur().matrix=t.value;markDirty();return;}
+  if(d.f==='start'||d.f==='end'||d.ts!=null) render();
+});
+
+document.addEventListener('input',function(ev){
+  var t=ev.target, d=t.dataset;
+  if(t.tagName==='TEXTAREA') autosize(t);
+  if(d.f&&d.f!=='matrix'){
+    var c=cur();
+    if(d.f.indexOf('kojihi.')===0) c.kojihi[d.f.slice(7)]=t.value;
+    else c[d.f]=(d.f==='start'||d.f==='end')?normDate(t.value):t.value;
+    if(d.f==='start'||d.f==='end'||d.f==='name'||d.f==='icon'){
+      var st=$('edStatus'); if(st){st.textContent=statusText(c);st.className='status-line '+statusOf(c).k;}
+    }
+    markDirty(); return;
+  }
+  if(d.dt!=null){S.data.details[cur().id][+d.dt].text=t.value;markDirty();return;}
+  if(d.s){S.data.settings[d.s]=t.value;markDirty();return;}
+  if(d.o!=null){S.data.others[+d.o].name=t.value;markDirty();return;}
+  if(d.tn!=null){S.data.themes[+d.tn].name=t.value;markDirty();return;}
+  if(d.ts!=null){S.data.themes[+d.ts].start=normDate(t.value);markDirty();return;}
+  if(d.tc!=null){
+    var v=t.value.trim();
+    if(v&&v[0]!=='#') v='#'+v;
+    if(!isHex(v)) return;
+    S.data.themes[+d.tc].colors[d.ck]=v.toLowerCase();
+    // カラーピッカーと16進数の欄を連動
+    document.querySelectorAll('[data-tc="'+d.tc+'"][data-ck="'+d.ck+'"]').forEach(function(x){if(x!==t)x.value=v.toLowerCase();});
+    if(S.forceTheme==null) S.forceTheme=+d.tc;
+    markDirty(); return;
+  }
+});
+
+$('pvDate').addEventListener('change',function(){
+  S.previewDate=normDate(this.value);
+  render(); sendPreview();
+});
+
+$('loginBtn').addEventListener('click',function(){var pw=$('pw').value;if(pw)login(pw);});
+$('pw').addEventListener('keydown',function(e){if(e.key==='Enter'){var pw=$('pw').value;if(pw)login(pw);}});
+
+window.addEventListener('beforeunload',function(e){if(S.dirty){e.preventDefault();e.returnValue='';}});
+
+(function(){
+  if(!apiReady()){
+    $('loginErr').innerHTML='まだスプレッドシートとつながっていません。<br>config.js に Apps Script の URL を設定してください（手順：ADMIN_SETUP.md）。';
+    return;
+  }
+  var pw=sessionStorage.getItem('adminPw');
+  if(pw) login(pw,true);
+})();
+</script>
+</body>
+</html>
