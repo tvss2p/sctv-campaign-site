@@ -84,6 +84,32 @@ table.matrix td:first-child{text-align:left;font-weight:600;font-size:11px;backg
 .m-ng{color:var(--ng);font-weight:700}
 .m-na{color:var(--text-muted)}
 .aipo-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+/* 併用チェック */
+.ck-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.ck-lead{font-size:12px;color:var(--text-muted);line-height:1.6}
+.ck-reset{flex-shrink:0;font-family:inherit;font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer}
+.ck-group{font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.08em;margin:14px 0 6px}
+.ck-chips{display:flex;flex-wrap:wrap;gap:8px}
+.ck-chip{display:flex;flex-direction:column;align-items:flex-start;gap:2px;max-width:100%;text-align:left;font-family:inherit;font-size:13px;font-weight:700;line-height:1.35;padding:9px 13px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .15s}
+.ck-chip .ck-why{font-size:10px;font-weight:500;line-height:1.4}
+.ck-chip.on{background:linear-gradient(135deg,var(--main),var(--main-deep));border-color:var(--main);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.ck-chip.x-ng{opacity:.55;border-style:dashed}
+.ck-chip.x-ng .ck-why{color:var(--ng)}
+.ck-chip.x-unk .ck-why{color:var(--trial)}
+.ck-result{margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.ck-sub{font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.6}
+.ck-pairs{display:grid;gap:6px;margin-top:12px}
+.ck-pair{background:var(--surface2);border-radius:8px;padding:8px 10px;font-size:12px}
+.ck-pair-row{display:flex;align-items:center;gap:8px}
+.ck-pair-names{flex:1;min-width:0;line-height:1.5}
+.ck-pair-names a{color:var(--link);text-decoration:none}
+.ck-pair-note{font-size:10px;color:var(--text-muted);margin-top:3px}
+.combo-unk{background:color-mix(in srgb,var(--trial) 16%,transparent);color:var(--trial)}
+.ck-result.ck-detail{margin-top:8px}
+.ck-bar{position:sticky;bottom:10px;z-index:5;margin-top:20px;padding:12px 14px;border-radius:12px;font-size:14px;font-weight:700;text-align:center;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer}
+.ck-bar.v-ok{background:var(--ok)}
+.ck-bar.v-ng{background:var(--ng)}
+.ck-bar.v-unk{background:var(--trial)}
 .site-footer{text-align:center;padding:8px 16px 0}
 .site-footer a{display:inline-block;font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 14px;border:1px solid var(--border);border-radius:999px;background:var(--surface)}
 .notice{font-size:11px;font-weight:700;text-align:center;padding:5px 8px;color:#fff;background:var(--main-deep)}
@@ -125,6 +151,7 @@ table.matrix td:first-child{text-align:left;font-weight:600;font-size:11px;backg
   <button class="tab-btn" data-tab="limited" onclick="switchTab('limited',this)">期間限定</button>
   <button class="tab-btn" data-tab="always" onclick="switchTab('always',this)">常設</button>
   <button class="tab-btn" data-tab="trial" onclick="switchTab('trial',this)">試験施策</button>
+  <button class="tab-btn" data-tab="check" onclick="switchTab('check',this)">併用チェック</button>
   <button class="tab-btn" data-tab="matrix" onclick="switchTab('matrix',this)">重畳適用表</button>
 </div>
 <main id="main"></main>
@@ -360,10 +387,99 @@ function buildMatrix(){
   return html;
 }
 
+// ---------- 併用チェック ----------
+// 選んだもの同士を2つずつ判定する。重畳適用表の A→B と B→A の両方を見て、
+// どちらかが ❌ なら不可、✅ があれば可、どちらも未設定なら要確認。
+var PICK=[];  // 選択中のID（選んだ順）。タブ切替・再描画をまたいで保持
+
+function checkTargets(){
+  var list=DATA.campaigns.filter(isActive).map(function(c){return {id:c.id,name:c.label||c.name,cat:c.category};});
+  return list.concat(DATA.others.map(function(o){return {id:o.id,name:o.name,cat:'other'};}));
+}
+function pairState(a,b){
+  function get(x,y){var cb=(DATA.combos[x]||[]).find(function(z){return z.to===y;});return cb?cb.r:null;}
+  var ab=get(a,b), ba=get(b,a);
+  if(ab==='ng'||ba==='ng') return {r:'ng', mismatch:ab==='ok'||ba==='ok'};
+  if(ab==='ok'||ba==='ok') return {r:'ok'};
+  return {r:'unk'};
+}
+function togglePick(id){
+  var i=PICK.indexOf(id);
+  if(i>=0) PICK.splice(i,1); else PICK.push(id);
+  renderTab('check');
+}
+function resetPick(){PICK=[];renderTab('check');}
+function gotoCard(id){
+  switchTab('all',document.querySelector('.tab-btn[data-tab="all"]'));
+  var el=document.getElementById('card-'+id);
+  if(el){el.classList.add('open');el.scrollIntoView({block:'start'});window.scrollBy(0,-90);}
+}
+
+function buildChecker(){
+  var targets=checkTargets();
+  var ids=targets.map(function(t){return t.id;});
+  PICK=PICK.filter(function(id){return ids.indexOf(id)>=0;}); // 終了したものは選択から外す
+  var nameOf={};targets.forEach(function(t){nameOf[t.id]=t.name;});
+
+  var html='<div class="section-label">併用チェック</div>'
+    +'<div class="ck-head"><div class="ck-lead">適用したいキャンペーンをタップしてください。<br>選んでいないものにも、いまの選択に足せるかどうかが表示されます。</div>'
+    +(PICK.length?'<button class="ck-reset" onclick="resetPick()">リセット</button>':'')+'</div>';
+
+  var groups=CATEGORIES.map(function(s){return {key:s.key,label:s.label};}).concat([{key:'other',label:'その他'}]);
+  groups.forEach(function(g){
+    var items=targets.filter(function(t){return t.cat===g.key;});
+    if(!items.length) return;
+    html+='<div class="ck-group">'+esc(g.label)+'</div><div class="ck-chips">';
+    items.forEach(function(t){
+      var on=PICK.indexOf(t.id)>=0, cls='', why='';
+      if(!on && PICK.length){
+        var ng=[], unk=false;
+        PICK.forEach(function(p){var st=pairState(t.id,p);if(st.r==='ng')ng.push(nameOf[p]);else if(st.r==='unk')unk=true;});
+        if(ng.length){cls=' x-ng';why='❌ '+ng.join('・')+'と併用不可';}
+        else if(unk){cls=' x-unk';why='❓ 未設定の組み合わせあり';}
+      }
+      html+='<button class="ck-chip'+(on?' on':'')+cls+'" data-id="'+esc(t.id)+'" onclick="togglePick(this.dataset.id)">'
+        +'<span>'+(on?'✓ ':'')+esc(t.name)+'</span>'+(why?'<span class="ck-why">'+esc(why)+'</span>':'')+'</button>';
+    });
+    html+='</div>';
+  });
+
+  if(PICK.length<2){
+    html+='<div class="ck-result"><div class="ck-sub">'+(PICK.length?'もう1つ以上選ぶと、併用できるか判定します。':'2つ以上選ぶと、併用できるか判定します。')+'</div></div>';
+    return html;
+  }
+
+  var pairs=[];
+  for(var i=0;i<PICK.length;i++) for(var j=i+1;j<PICK.length;j++){
+    var st=pairState(PICK[i],PICK[j]);
+    pairs.push({a:PICK[i],b:PICK[j],r:st.r,mismatch:st.mismatch});
+  }
+  var order={ng:0,unk:1,ok:2};
+  pairs.sort(function(x,y){return order[x.r]-order[y.r];});
+  var nNg=pairs.filter(function(p){return p.r==='ng';}).length;
+  var nUnk=pairs.filter(function(p){return p.r==='unk';}).length;
+  var v=nNg?'ng':nUnk?'unk':'ok';
+  var msg=v==='ng'?'❌ 併用できない組み合わせがあります':v==='unk'?'❓ 確認が必要な組み合わせがあります':'✅ この組み合わせは併用できます';
+  var sub=v==='ng'?'❌ の組み合わせは、どちらか一方だけ適用できます。':v==='unk'?'❓ は重畳適用表で未設定の組み合わせです。Aipo の社内告知で確認してください。':'選んだ '+PICK.length+' 件はすべて併用できます。';
+
+  function link(id){return findCampaign(DATA,id)?'<a href="javascript:void(0)" onclick="gotoCard(\''+esc(id)+'\')">'+esc(nameOf[id])+'</a>':esc(nameOf[id]);}
+  // 判定バーは画面下に固定され、スクロールすると結果の見出しとして止まる
+  html+='<div class="ck-bar v-'+v+'" onclick="document.getElementById(\'ck-result\').scrollIntoView({block:\'center\',behavior:\'smooth\'})">'+msg+'</div>';
+  html+='<div class="ck-result ck-detail" id="ck-result"><div class="ck-sub" style="margin-top:0">'+sub+'</div><div class="ck-pairs">';
+  pairs.forEach(function(p){
+    var badge=p.r==='ok'?'<span class="combo-badge combo-ok">✅ 可</span>':p.r==='ng'?'<span class="combo-badge combo-ng">❌ 不可</span>':'<span class="combo-badge combo-unk">❓ 要確認</span>';
+    html+='<div class="ck-pair"><div class="ck-pair-row"><span class="ck-pair-names">'+link(p.a)+' × '+link(p.b)+'</span>'+badge+'</div>'
+      +(p.mismatch?'<div class="ck-pair-note">※ 重畳適用表の設定が片側だけ ✅ になっています（不可として判定）</div>':'')+'</div>';
+  });
+  html+='</div></div>';
+  return html;
+}
+
 function renderTab(tab){
   CUR_TAB=tab;
   var main=document.getElementById('main');
   if(tab==='matrix'){main.innerHTML=buildMatrix();return;}
+  if(tab==='check'){main.innerHTML=buildChecker();return;}
   var html='';
   CATEGORIES.forEach(function(s){
     var cards=DATA.campaigns.filter(function(c){return isActive(c)&&c.category===s.key&&(tab==='all'||c.category===tab);});
