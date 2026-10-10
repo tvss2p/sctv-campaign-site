@@ -251,12 +251,6 @@ var S={
   history:null, pvReady:false, focus:null
 };
 var ICONS=['📺','🌐','📹','🎁','🔥','⚙️','👥','🏠','🎓','🏥','💰','📱','🎉','⭐','📣','🏷️','💡','🎫','🆕','🍀'];
-var MATRIX_OPTS=[
-  {v:'both',t:'表に出す（行・列とも）'},
-  {v:'row', t:'行だけに出す（このキャンペーンから見た可否のみ）'},
-  {v:'col', t:'列だけに出す（相手としてのみ）'},
-  {v:'none',t:'重畳適用表には出さない'}
-];
 var DTYPES=[
   {v:'ok',  mark:'✓', color:'#1e9e62', title:'対象になる条件', short:'✓ 対象'},
   {v:'ng',  mark:'✗', color:'#d64040', title:'対象外になる条件', short:'✗ 対象外'},
@@ -571,9 +565,7 @@ function viewEditor(){
         +'<button data-act="combo" data-to="'+esc(t.id)+'" data-r="none" class="none'+(r==='none'?' on':'')+'">— なし</button>'
         +'</div></div>';
     }).join('')+'</div>'
-    +'<div class="field" style="margin-top:14px"><label>「重畳適用表」タブでの扱い</label><select class="inp" data-f="matrix">'
-    +MATRIX_OPTS.map(function(o){return '<option value="'+o.v+'"'+(c.matrix===o.v?' selected':'')+'>'+o.t+'</option>';}).join('')
-    +'</select><div class="hint">例：お友だち紹介のように「原則どれとも併用可」のものは「出さない」にすると表がすっきりします。</div></div>'
+    +'<div class="hint" style="margin-top:10px">✅/❌ を付けた組み合わせは、サイトの「重畳適用表」タブにもそのまま表示されます。</div>'
     +'</div>';
 
   // リンク
@@ -618,7 +610,7 @@ function viewMatrix(){
     h+='</tr>';
   });
   h+='</tbody></table></div>'
-    +'<div class="legend">✅ 可　❌ 不可　— カードに表示しない<br>サイトの「重畳適用表」タブに出すかどうかは、各キャンペーンの編集画面で設定できます。</div>';
+    +'<div class="legend">✅ 可　❌ 不可　— カードに表示しない<br>✅/❌ を付けたマスは、サイトの「重畳適用表」タブにもそのまま表示されます（— だけの行・列は表から自動で省きます）。</div>';
   return h;
 }
 
@@ -856,14 +848,13 @@ document.addEventListener('change',function(ev){
     th.colors=presetColors(t.value);
     S.forceTheme=+d.preset; markDirty(); render(); return;
   }
-  if(d.f==='matrix'){cur().matrix=t.value;markDirty();return;}
   if(d.f==='start'||d.f==='end'||d.ts!=null) render();
 });
 
 document.addEventListener('input',function(ev){
   var t=ev.target, d=t.dataset;
   if(t.tagName==='TEXTAREA') autosize(t);
-  if(d.f&&d.f!=='matrix'){
+  if(d.f){
     var c=cur();
     if(d.f.indexOf('kojihi.')===0) c.kojihi[d.f.slice(7)]=t.value;
     else c[d.f]=(d.f==='start'||d.f==='end')?normDate(t.value):t.value;

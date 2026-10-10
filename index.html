@@ -312,14 +312,16 @@ function buildCard(c){
 
 function buildMatrix(){
   var act=activeSet();
-  // 行・列の並びは管理画面のキャンペーン順。基準日にアクティブなものだけ採用し、空行・空列は自動除去。
+  // 管理画面の重畳適用表で ✅/❌ を付けた組み合わせをそのまま表示する。
+  // 行・列の並びは管理画面と同じ（列はキャンペーン → 取次店紹介などの順）。基準日にアクティブなものだけ採用し、空行・空列は自動除去。
   function cell(rid,cid){
     if(rid===cid)return null;
     var cb=(DATA.combos[rid]||[]).find(function(x){return x.to===cid;});
     return cb?cb.r:'na';
   }
-  var rows=DATA.campaigns.filter(function(c){return act[c.id]&&(c.matrix==='both'||c.matrix==='row')&&(DATA.combos[c.id]||[]).length;}).map(function(c){return c.id;});
-  var cols=DATA.campaigns.filter(function(c){return act[c.id]&&(c.matrix==='both'||c.matrix==='col');}).map(function(c){return c.id;});
+  var rows=DATA.campaigns.filter(function(c){return act[c.id]&&(DATA.combos[c.id]||[]).length;}).map(function(c){return c.id;});
+  var cols=DATA.campaigns.filter(function(c){return act[c.id];}).map(function(c){return c.id;})
+    .concat(DATA.others.map(function(o){return o.id;}));
   cols=cols.filter(function(cid){return rows.some(function(rid){var r=cell(rid,cid);return r&&r!=='na';});});
   rows=rows.filter(function(rid){return cols.some(function(cid){var r=cell(rid,cid);return r&&r!=='na';});});
   var html='<div class="section-label">重畳適用一覧表</div>';
