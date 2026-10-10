@@ -169,6 +169,7 @@ table.mx th,table.mx td{border-right:1px solid var(--line2);border-bottom:1px so
 table.mx thead th{position:sticky;top:0;background:#f8f9fb;z-index:2;font-size:11px;font-weight:700;color:var(--muted);vertical-align:bottom;min-width:64px;white-space:normal;line-height:1.3}
 table.mx th.rh,table.mx td.rh{position:sticky;left:0;background:#f8f9fb;text-align:left;z-index:1;font-weight:700;max-width:200px;white-space:normal;line-height:1.35;min-width:150px}
 table.mx thead th.rh{z-index:3}
+table.mx td.rh .rh-sub{font-size:10px;font-weight:500;color:var(--muted);margin-top:2px}
 table.mx td.cell{cursor:pointer;font-size:15px;min-width:52px;user-select:none}
 table.mx td.cell:hover{background:#fff4ef}
 table.mx td.self{background:#f3f4f6;color:#c3c7cf}
@@ -611,6 +612,18 @@ function viewMatrix(){
       var v='none';
       combos.forEach(function(x){if(x.to===c.id)v=x.r;});
       h+='<td class="cell '+(v==='none'?'':v)+'" data-act="mx" data-r="'+esc(r.id)+'" data-c="'+esc(c.id)+'">'+(v==='ok'?'✅':v==='ng'?'❌':'<span style="color:#c3c7cf">—</span>')+'</td>';
+    });
+    h+='</tr>';
+  });
+  // 取次店紹介などキャンペーン以外の項目はカードがないので、行は列（相手側の設定）と連動して表示・編集する
+  S.data.others.forEach(function(o){
+    h+='<tr><td class="rh">'+esc(o.name)+'<div class="rh-sub">カードなし・「'+esc(o.name)+'」列と連動</div></td>';
+    cols.forEach(function(c){
+      if(c.id===o.id){h+='<td class="self">／</td>';return;}
+      if(!findCampaign(S.data,c.id)){h+='<td class="self">—</td>';return;}
+      var v='none';
+      (S.data.combos[c.id]||[]).forEach(function(x){if(x.to===o.id)v=x.r;});
+      h+='<td class="cell '+(v==='none'?'':v)+'" data-act="mx" data-r="'+esc(c.id)+'" data-c="'+esc(o.id)+'">'+(v==='ok'?'✅':v==='ng'?'❌':'<span style="color:#c3c7cf">—</span>')+'</td>';
     });
     h+='</tr>';
   });
