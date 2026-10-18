@@ -20,6 +20,12 @@ header p{font-size:10px;color:var(--header-text);opacity:.82;margin-top:2px}
 .tab-nav::-webkit-scrollbar{display:none}
 .tab-btn{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;font-family:inherit;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .2s}
 .tab-btn.active{background:linear-gradient(135deg,var(--main),var(--main-deep));border-color:var(--main);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.month-nav{display:flex;align-items:center;gap:6px;padding:8px 16px;overflow-x:auto;scrollbar-width:none;background:var(--bg);border-bottom:1px solid var(--border)}
+.month-nav::-webkit-scrollbar{display:none}
+.month-nav-label{flex-shrink:0;font-size:10px;font-weight:700;color:var(--text-muted);margin-right:2px}
+.month-btn{flex-shrink:0;padding:4px 11px;border-radius:14px;font-size:11px;font-weight:500;font-family:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer}
+.month-btn.active{background:var(--surface2);border-color:var(--main);color:var(--main-deep);font-weight:700}
+.card-when{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;display:inline-block;margin:0 0 5px 4px;background:color-mix(in srgb,var(--main) 16%,transparent);color:var(--main-deep)}
 main{padding:16px}
 .section-label{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--main-deep);margin:20px 0 10px;display:flex;align-items:center;gap:8px}
 .section-label::after{content:'';flex:1;height:1px;background:linear-gradient(to right,var(--main),transparent)}
@@ -154,6 +160,7 @@ table.matrix td:first-child{text-align:left;font-weight:600;font-size:11px;backg
   <button class="tab-btn" data-tab="check" onclick="switchTab('check',this)">併用チェック</button>
   <button class="tab-btn" data-tab="matrix" onclick="switchTab('matrix',this)">重畳適用表</button>
 </div>
+<div class="month-nav" id="month-nav"></div>
 <main id="main"></main>
 <footer class="site-footer" id="site-footer"><a href="admin.html">🛠 管理者ページ</a></footer>
 </div>
@@ -169,6 +176,7 @@ var PARAMS=new URLSearchParams(location.search);
 var PREVIEW=PARAMS.has('preview');  // 管理画面のプレビュー用（postMessage でデータを受け取る）
 var PREVIEW_DATE=null;
 var PREVIEW_THEME=null;
+var VIEW_MONTH=null;  // 'YYYY-MM' を選ぶと、その月に実施されるキャンペーンを表示（null＝今日時点）
 
 // ロック画面の時点から、前回表示したテーマ（色だけ）を反映
 (function(){
@@ -226,13 +234,16 @@ function setData(data,pw){
   }catch(e){}
 }
 
+var LAST_OFFLINE=false;
 function showSite(offline){
+  LAST_OFFLINE=offline;
   document.getElementById('lock-screen').style.display='none';
   document.getElementById('site-body').style.display='block';
   var n='';
   if(PREVIEW) n+='<div class="notice">👁 プレビュー表示（管理画面で編集中・未保存の内容を含みます）</div>';
   var q=PREVIEW_DATE||PARAMS.get('date');
   if(q) n+='<div class="notice">🔎 '+esc(q)+' 時点の内容を表示中</div>';
+  if(VIEW_MONTH) n+='<div class="notice">📅 '+esc(monthLabel(VIEW_MONTH,true))+'に実施されるキャンペーンを表示中</div>';
   if(offline) n+='<div class="notice gray">⚠ 最新データに接続できませんでした。保存済みの内容を表示しています</div>';
   document.getElementById('notices').innerHTML=n;
   render();
@@ -245,8 +256,55 @@ function render(){
   document.getElementById('hd-sub').textContent=s.subtitle;
   document.title=s.title+'｜社内用';
   applyThemeColors(PREVIEW_THEME||pickTheme(DATA.themes,nowDate()).colors);
+  renderMonthNav();
   renderTab(CUR_TAB);
 }
+
+// ---------- 表示月の切り替え ----------
+function monthLabel(m,withYear){
+  var y=+m.slice(0,4), mo=+m.slice(5,7);
+  return (withYear||y!==nowDate().getFullYear()?y+'年':'')+mo+'月';
+}
+function addMonth(m,n){
+  var d=new Date(+m.slice(0,4),+m.slice(5,7)-1+n,1);
+  return ymd(d).slice(0,7);
+}
+function monthRange(m){
+  return {from:m+'-01', to:ymd(new Date(+m.slice(0,4),+m.slice(5,7),0))};
+}
+// 今月から、最も先に始まるキャンペーンの月まで（最低でも2ヶ月先・最大12ヶ月先）
+function monthOptions(){
+  var cur=ymd(nowDate()).slice(0,7), last=addMonth(cur,2), max=addMonth(cur,12);
+  DATA.campaigns.forEach(function(c){
+    var s=(c.start||'').slice(0,7);
+    if(!c.hidden && s>last) last=s;
+  });
+  if(last>max) last=max;
+  var list=[];
+  for(var m=addMonth(cur,1);m<=last;m=addMonth(m,1)) list.push(m);
+  return list;
+}
+function renderMonthNav(){
+  var nav=document.getElementById('month-nav');
+  if(!MONTH_NAV){nav.style.display='none';return;}
+  var opts=monthOptions();
+  if(VIEW_MONTH && opts.indexOf(VIEW_MONTH)<0) VIEW_MONTH=null;
+  var html='<span class="month-nav-label">表示</span>'
+    +'<button class="month-btn'+(VIEW_MONTH?'':' active')+'" onclick="setViewMonth(null)">今日</button>';
+  opts.forEach(function(m){
+    html+='<button class="month-btn'+(VIEW_MONTH===m?' active':'')+'" onclick="setViewMonth(\''+m+'\')">'+esc(monthLabel(m))+'</button>';
+  });
+  nav.innerHTML=html;
+}
+function setViewMonth(m){
+  VIEW_MONTH=m;
+  try{ if(m) sessionStorage.setItem('viewMonth',m); else sessionStorage.removeItem('viewMonth'); }catch(e){}
+  showSite(LAST_OFFLINE);
+  window.scrollTo(0,0);
+}
+// 管理画面のプレビュー・?date= 指定時は、指定日の表示を優先するため月の切り替えを出さない
+var MONTH_NAV=!PREVIEW && !PARAMS.get('date');
+if(MONTH_NAV){try{VIEW_MONTH=sessionStorage.getItem('viewMonth')||null;}catch(e){}}
 
 // 表示基準日。?date=YYYY-MM-DD で任意日のプレビュー可（未指定なら端末の現在日）。
 function nowDate(){
@@ -257,6 +315,13 @@ function nowDate(){
 // 非公開でなく、基準日が start〜end（両端含む）の範囲内なら表示。start/end 省略はそれぞれ無期限。
 function isActive(c){
   if(c.hidden) return false;
+  if(VIEW_MONTH){
+    // 月表示：その月に1日でも実施期間が重なれば表示
+    var r=monthRange(VIEW_MONTH);
+    if(c.start && c.start>r.to) return false;
+    if(c.end && c.end<r.from) return false;
+    return true;
+  }
   var t=ymd(nowDate());
   if(c.start && t<c.start) return false;
   if(c.end && t>c.end) return false;
@@ -328,13 +393,23 @@ function buildCard(c){
     +'<div class="card-header" onclick="this.closest(\'.card\').classList.toggle(\'open\')">'
     +'<div class="card-icon ic-'+esc(c.category)+'">'+esc(c.icon)+'</div>'
     +'<div class="card-title-wrap">'
-    +'<span class="card-category cat-'+esc(c.category)+'">'+esc(c.status)+'</span>'
+    +'<span class="card-category cat-'+esc(c.category)+'">'+esc(c.status)+'</span>'+whenBadge(c)
     +'<div class="card-title">'+esc(c.name)+'</div>'
     +(c.subtitle?'<div class="card-subtitle">'+fmt(c.subtitle)+'</div>':'')
     +'</div><div class="card-chevron">▾</div></div>'
     +periodHtml
     +'<div class="card-body">'+hlHtml+kjHtml+tgtHtml+noteHtml+comboHtml+aipoHtml+'</div>'
     +'</div>';
+}
+
+// 月表示のとき、今日時点ではまだ始まっていない／その月の途中で終わるキャンペーンに目印を付ける
+function whenBadge(c){
+  if(!VIEW_MONTH) return '';
+  var t=ymd(nowDate()), r=monthRange(VIEW_MONTH);
+  var md=function(s){return (+s.slice(5,7))+'/'+(+s.slice(8,10));};
+  if(c.start && c.start>t) return '<span class="card-when">🔜 '+md(c.start)+'から</span>';
+  if(c.end && c.end<=r.to) return '<span class="card-when">'+md(c.end)+'まで</span>';
+  return '';
 }
 
 function buildMatrix(){
