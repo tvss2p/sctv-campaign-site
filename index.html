@@ -76,7 +76,7 @@ main{padding:16px}
 .nb-tbl td.dash{color:var(--text-muted);font-weight:400}
 .nb-flow{display:flex;align-items:stretch;gap:4px;margin:0 0 10px}
 .nb-step{flex:1;min-width:0;background:var(--surface2);border-radius:8px;padding:6px 4px;text-align:center}
-.nb-step .k{display:block;font-size:10px;color:var(--text-muted)}
+.nb-step .k{display:block;font-size:10px;color:var(--text)}
 .nb-step .v{display:block;font-size:12px;font-weight:700;color:var(--text);margin-top:2px}
 .nb-step.free{background:var(--main);}
 .nb-step.free .k,.nb-step.free .v{color:#fff}
@@ -88,7 +88,7 @@ main{padding:16px}
 .nb-card .no{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--main);color:#fff;font-size:12px;font-weight:700;align-items:center;justify-content:center}
 .nb-card .nm{display:block;font-size:11px;font-weight:700;line-height:1.35;margin-top:4px}
 .nb-card .pr{display:block;font-size:12px;font-weight:700;color:var(--main-deep);margin-top:3px}
-.nb-card .sb{display:block;font-size:10px;color:var(--text-muted);margin-top:2px;line-height:1.3}
+.nb-card .sb{display:block;font-size:11px;color:var(--text);margin-top:3px;line-height:1.35}
 .combo-title{font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.08em;margin-bottom:8px}
 .combo-grid{display:grid;gap:5px}
 .combo-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:7px 10px;font-size:12px}
@@ -374,7 +374,7 @@ function noteBlock(text){
       var r=cells(l);
       h+='<tr>'+r.map(function(x,i){
         if(i===0) return '<th>'+fmt(x)+'</th>';
-        return '<td'+(/^[-－—ー]$/.test(x)?' class="dash"':'')+'>'+(/^[-－—ー]$/.test(x)?'—':fmt(x))+'</td>';
+        return '<td'+(/^[-－—ー]$/.test(x)?' class="dash"':'')+'>'+(/^[-－—ー]$/.test(x)?'なし':fmt(x))+'</td>';
       }).join('')+'</tr>';
     });
     return h+'</tbody></table></div>';
@@ -439,7 +439,7 @@ function buildCard(c){
 
   var noteHtml='';
   if(noteList.length){
-    noteHtml='<div class="info-section"><div class="info-section-title">注意事項</div>';
+    noteHtml='<div class="info-section"><div class="info-section-title">'+(noteList.some(function(d){return /^#/.test(d.text||'');})?'内容・注意事項':'注意事項')+'</div>';
     noteList.forEach(function(d){noteHtml+=noteBlock(d.text);});
     noteHtml+='</div>';
   }
