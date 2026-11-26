@@ -24,7 +24,7 @@ var SH = {
 
 var CAT    = {limited:'期間限定', closed:'クローズド', always:'常設', trial:'試験施策'};
 var DTYPE  = {ok:'対象', ng:'対象外', note:'注意事項'};
-var COMBO  = {ok:'可', ng:'不可'};
+var COMBO  = {ok:'可', ng:'不可', sel:'選択'};  // 選択＝選べる特典の中の1つとして使う
 var MATRIX = {both:'行と列', row:'行のみ', col:'列のみ', none:'出さない'};
 var SHOW   = {show:'表示', hide:'非表示'};
 

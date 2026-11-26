@@ -137,6 +137,8 @@ table.matrix td:first-child{text-align:left;font-weight:600;font-size:11px;backg
 .ck-pair-names{flex:1;min-width:0;line-height:1.5}
 .ck-pair-names a{color:var(--link);text-decoration:none}
 .ck-pair-note{font-size:10px;color:var(--text-muted);margin-top:3px}
+.combo-sel{background:color-mix(in srgb,var(--link) 14%,transparent);color:var(--link)}
+.m-sel{color:var(--link);font-weight:700}
 .combo-unk{background:color-mix(in srgb,var(--trial) 16%,transparent);color:var(--trial)}
 .ck-result.ck-detail{margin-top:8px}
 .ck-bar{position:sticky;bottom:10px;z-index:5;margin-top:20px;padding:12px 14px;border-radius:12px;font-size:14px;font-weight:700;text-align:center;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer}
@@ -448,7 +450,7 @@ function buildCard(c){
   if(comb.length){
     comboHtml='<div class="combo-title">重畳適用</div><div class="combo-grid">';
     comb.forEach(function(cb){
-      var badge=cb.r==='ok'?'<span class="combo-badge combo-ok">✅ 可</span>':'<span class="combo-badge combo-ng">❌ 不可</span>';
+      var badge=cb.r==='ok'?'<span class="combo-badge combo-ok">✅ 可</span>':cb.r==='sel'?'<span class="combo-badge combo-sel">🔀 選択</span>':'<span class="combo-badge combo-ng">❌ 不可</span>';
       comboHtml+='<div class="combo-row"><span class="combo-name">'+esc(labelOf(DATA,cb.to))+'</span>'+badge+'</div>';
     });
     comboHtml+='</div>';
@@ -504,7 +506,7 @@ function buildMatrix(){
       cols.forEach(function(cid){
         var r=cell(rid,cid);
         if(r===null){html+='<td class="m-na">—</td>';return;}
-        html+='<td class="m-'+r+'">'+(r==='ok'?'✅':r==='ng'?'❌':'—')+'</td>';
+        html+='<td class="m-'+r+'">'+(r==='ok'?'✅':r==='ng'?'❌':r==='sel'?'🔀':'—')+'</td>';
       });
       html+='</tr>';
     });
@@ -513,7 +515,7 @@ function buildMatrix(){
     html+='<p class="matrix-hint">現在、表示できる組み合わせはありません</p>';
   }
   html+='<div style="margin-top:14px;font-size:11px;color:var(--text-muted);line-height:1.8">'
-    +'<div>✅ = 重畳適用可　　❌ = 重畳適用不可　　— = 対象外</div>';
+    +'<div>✅ = 重畳適用可　　❌ = 重畳適用不可　　🔀 = 選べる特典の中の1つとして選ぶ（別に重ねては使えない）　　— = 対象外</div>';
   (DATA.settings.matrixNotes||'').split(/\r?\n/).forEach(function(line,i){
     if(line.trim()) html+='<div'+(i===0?' style="margin-top:4px"':'')+'>'+fmt(line)+'</div>';
   });
@@ -542,6 +544,7 @@ function pairState(a,b){
   function get(x,y){var cb=(DATA.combos[x]||[]).find(function(z){return z.to===y;});return cb?cb.r:null;}
   var ab=get(a,b), ba=get(b,a);
   if(ab==='ng'||ba==='ng') return {r:'ng', mismatch:ab==='ok'||ba==='ok'};
+  if(ab==='sel'||ba==='sel') return {r:'sel'};
   if(ab==='ok'||ba==='ok') return {r:'ok'};
   return {r:'unk'};
 }
@@ -596,20 +599,21 @@ function buildChecker(){
     var st=pairState(PICK[i],PICK[j]);
     pairs.push({a:PICK[i],b:PICK[j],r:st.r,mismatch:st.mismatch});
   }
-  var order={ng:0,unk:1,ok:2};
+  var order={ng:0,unk:1,sel:2,ok:3};
+  var nSel=pairs.filter(function(p){return p.r==='sel';}).length;
   pairs.sort(function(x,y){return order[x.r]-order[y.r];});
   var nNg=pairs.filter(function(p){return p.r==='ng';}).length;
   var nUnk=pairs.filter(function(p){return p.r==='unk';}).length;
   var v=nNg?'ng':nUnk?'unk':'ok';
   var msg=v==='ng'?'❌ 併用できない組み合わせがあります':v==='unk'?'❓ 確認が必要な組み合わせがあります':'✅ この組み合わせは併用できます';
-  var sub=v==='ng'?'❌ の組み合わせは、どちらか一方だけ適用できます。':v==='unk'?'❓ は重畳適用表で未設定の組み合わせです。Aipo の社内告知で確認してください。':'選んだ '+PICK.length+' 件はすべて併用できます。';
+  var sub=v==='ng'?'❌ の組み合わせは、どちらか一方だけ適用できます。':v==='unk'?'❓ は重畳適用表で未設定の組み合わせです。Aipo の社内告知で確認してください。':'選んだ '+PICK.length+' 件はすべて併用できます。'+(nSel?'🔀 は、選べる特典の中の1つとして使う組み合わせです（選べる数に入ります）。':'');
 
   function link(id){return findCampaign(DATA,id)?'<a href="javascript:void(0)" onclick="gotoCard(\''+esc(id)+'\')">'+esc(nameOf[id])+'</a>':esc(nameOf[id]);}
   // 判定バーは画面下に固定され、スクロールすると結果の見出しとして止まる
   html+='<div class="ck-bar v-'+v+'" onclick="document.getElementById(\'ck-result\').scrollIntoView({block:\'center\',behavior:\'smooth\'})">'+msg+'</div>';
   html+='<div class="ck-result ck-detail" id="ck-result"><div class="ck-sub" style="margin-top:0">'+sub+'</div><div class="ck-pairs">';
   pairs.forEach(function(p){
-    var badge=p.r==='ok'?'<span class="combo-badge combo-ok">✅ 可</span>':p.r==='ng'?'<span class="combo-badge combo-ng">❌ 不可</span>':'<span class="combo-badge combo-unk">❓ 要確認</span>';
+    var badge=p.r==='ok'?'<span class="combo-badge combo-ok">✅ 可</span>':p.r==='sel'?'<span class="combo-badge combo-sel">🔀 選択</span>':p.r==='ng'?'<span class="combo-badge combo-ng">❌ 不可</span>':'<span class="combo-badge combo-unk">❓ 要確認</span>';
     html+='<div class="ck-pair"><div class="ck-pair-row"><span class="ck-pair-names">'+link(p.a)+' × '+link(p.b)+'</span>'+badge+'</div>'
       +(p.mismatch?'<div class="ck-pair-note">※ 重畳適用表の設定が片側だけ ✅ になっています（不可として判定）</div>':'')+'</div>';
   });

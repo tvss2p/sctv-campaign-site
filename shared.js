@@ -142,7 +142,7 @@ function upgradeData(d){
   };
   out.campaigns.forEach(function(c){
     out.details[c.id]=((d.details||{})[c.id]||[]).map(function(x){return {type:x.type||'note',text:x.text||''};});
-    if((d.combos||{})[c.id]) out.combos[c.id]=d.combos[c.id].map(function(x){return {to:x.to,r:x.r==='ng'?'ng':'ok'};});
+    if((d.combos||{})[c.id]) out.combos[c.id]=d.combos[c.id].map(function(x){return {to:x.to,r:(x.r==='ng'||x.r==='sel')?x.r:'ok'};});
   });
   return out;
 }

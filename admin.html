@@ -104,6 +104,7 @@ textarea.inp{resize:vertical;min-height:40px;overflow:hidden}
 .seg button.on{background:var(--text);color:#fff}
 .seg.ok3 button.on.ok{background:var(--green)}
 .seg.ok3 button.on.ng{background:var(--red)}
+.seg.ok3 button.on.sel{background:#2f6fed}
 .seg.ok3 button.on.none{background:#9aa1ad}
 .switch{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;font-weight:700;font-size:13px}
 .switch .knob{width:42px;height:24px;border-radius:12px;background:#cfd4dc;position:relative;transition:background .15s;flex-shrink:0}
@@ -568,6 +569,7 @@ function viewEditor(){
         +'<div class="seg ok3">'
         +'<button data-act="combo" data-to="'+esc(t.id)+'" data-r="ok" class="ok'+(r==='ok'?' on':'')+'">✅ 可</button>'
         +'<button data-act="combo" data-to="'+esc(t.id)+'" data-r="ng" class="ng'+(r==='ng'?' on':'')+'">❌ 不可</button>'
+        +'<button data-act="combo" data-to="'+esc(t.id)+'" data-r="sel" class="sel'+(r==='sel'?' on':'')+'" title="選べる特典の中の1つとして使う">🔀 選択</button>'
         +'<button data-act="combo" data-to="'+esc(t.id)+'" data-r="none" class="none'+(r==='none'?' on':'')+'">— なし</button>'
         +'</div></div>';
     }).join('')+'</div>'
@@ -598,7 +600,7 @@ function statusText(c){
 function viewMatrix(){
   var cs=S.data.campaigns.filter(function(c){var k=statusOf(c).k;return S.showEnded||(k!=='end'&&k!=='off');});
   var cols=cs.map(function(c){return {id:c.id,name:c.label||c.name};}).concat(S.data.others.map(function(o){return {id:o.id,name:o.name};}));
-  var h='<div class="note-box info">マスをタップするたびに <b>—（なし）→ ✅ 可 → ❌ 不可</b> と切り替わります。<br>行（左）のキャンペーンのカードに、列（上）の相手との可否が表示されます。</div>'
+  var h='<div class="note-box info">マスをタップするたびに <b>—（なし）→ ✅ 可 → ❌ 不可 → 🔀 選択</b> と切り替わります（🔀＝選べる特典の中の1つとして使う）。<br>行（左）のキャンペーンのカードに、列（上）の相手との可否が表示されます。</div>'
     +'<div class="toolbar"><label class="chk"><input type="checkbox" data-act="sym"'+(S.sym?' checked':'')+'> 反対側（列→行）にも同じ設定を反映する</label>'
     +'<label class="chk"><input type="checkbox" data-act="show-ended"'+(S.showEnded?' checked':'')+'> 終了・非公開のキャンペーンも表示</label></div>';
   if(!cs.length) return h+'<div class="empty">表示できるキャンペーンがありません</div>';
@@ -611,7 +613,7 @@ function viewMatrix(){
       if(c.id===r.id){h+='<td class="self">／</td>';return;}
       var v='none';
       combos.forEach(function(x){if(x.to===c.id)v=x.r;});
-      h+='<td class="cell '+(v==='none'?'':v)+'" data-act="mx" data-r="'+esc(r.id)+'" data-c="'+esc(c.id)+'">'+(v==='ok'?'✅':v==='ng'?'❌':'<span style="color:#c3c7cf">—</span>')+'</td>';
+      h+='<td class="cell '+(v==='none'?'':v)+'" data-act="mx" data-r="'+esc(r.id)+'" data-c="'+esc(c.id)+'">'+(v==='ok'?'✅':v==='ng'?'❌':v==='sel'?'🔀':'<span style="color:#c3c7cf">—</span>')+'</td>';
     });
     h+='</tr>';
   });
@@ -623,7 +625,7 @@ function viewMatrix(){
       if(!findCampaign(S.data,c.id)){h+='<td class="self">—</td>';return;}
       var v='none';
       (S.data.combos[c.id]||[]).forEach(function(x){if(x.to===o.id)v=x.r;});
-      h+='<td class="cell '+(v==='none'?'':v)+'" data-act="mx" data-r="'+esc(c.id)+'" data-c="'+esc(o.id)+'">'+(v==='ok'?'✅':v==='ng'?'❌':'<span style="color:#c3c7cf">—</span>')+'</td>';
+      h+='<td class="cell '+(v==='none'?'':v)+'" data-act="mx" data-r="'+esc(c.id)+'" data-c="'+esc(o.id)+'">'+(v==='ok'?'✅':v==='ng'?'❌':v==='sel'?'🔀':'<span style="color:#c3c7cf">—</span>')+'</td>';
     });
     h+='</tr>';
   });
@@ -783,7 +785,7 @@ var ACTIONS={
   'mx':function(el){
     var rid=el.dataset.r, cid=el.dataset.c, v='none';
     (S.data.combos[rid]||[]).forEach(function(x){if(x.to===cid)v=x.r;});
-    setCombo(rid,cid,v==='none'?'ok':v==='ok'?'ng':'none');
+    setCombo(rid,cid,v==='none'?'ok':v==='ok'?'ng':v==='ng'?'sel':'none');
     markDirty(); render();
   },
   'dup':function(){
